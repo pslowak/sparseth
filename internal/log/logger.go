@@ -29,11 +29,10 @@ type logger struct {
 }
 
 // New returns a new logger with the
-// default handler set.
-func New() Logger {
-	slog.SetLogLoggerLevel(slog.LevelDebug)
+// specified handler set.
+func New(handler slog.Handler) Logger {
 	return &logger{
-		inner: slog.Default(),
+		inner: slog.New(handler),
 	}
 }
 
