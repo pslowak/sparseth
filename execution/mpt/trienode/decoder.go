@@ -10,7 +10,7 @@ const (
 	// leaf node or extension node
 	shortNodeLength = 2
 
-	// fullNodeLength is the length of branch node
+	// fullNodeLength is the length of a branch node
 	fullNodeLength = 17
 )
 

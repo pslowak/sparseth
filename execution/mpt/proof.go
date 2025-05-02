@@ -5,7 +5,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
-	"sparseth/mpt/trienode"
+	"sparseth/execution/mpt/trienode"
 )
 
 // VerifyAccountProof verifies a Merkle proof for an Ethereum account
@@ -45,7 +45,7 @@ func verifyProof(rootHash common.Hash, key []byte, proofNodes [][]byte) ([]byte,
 
 		node, err := trienode.DecodeNode(rlpNode)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to decode node: %v", err)
 		}
 
 		if err := node.Validate(nibbles); err != nil {
