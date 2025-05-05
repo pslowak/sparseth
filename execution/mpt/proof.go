@@ -8,8 +8,8 @@ import (
 	"sparseth/execution/mpt/trienode"
 )
 
-// VerifyAccountProof verifies a Merkle proof for an Ethereum account
-// against a given state root.
+// VerifyAccountProof verifies a Merkle proof for an Ethereum
+// account against a given state root.
 func VerifyAccountProof(stateRoot common.Hash, address common.Address, proofNodes [][]byte) (*Account, error) {
 	key := crypto.Keccak256(address[:])
 	data, err := verifyProof(stateRoot, key[:], proofNodes)
@@ -19,20 +19,35 @@ func VerifyAccountProof(stateRoot common.Hash, address common.Address, proofNode
 
 	var account Account
 	if err := rlp.DecodeBytes(data, &account); err != nil {
-		return nil, fmt.Errorf("failed to decode account: %v", err)
+		return nil, fmt.Errorf("failed to decode account: %w", err)
 	}
 
 	return &account, err
 }
 
 // VerifyStorageProof verifies a Merkle proof for a given slot key
-// against a given storage root. Note that it is assumed that the
-// slot key is a Keccak256 hash of the byte key.
+// against a given storage root.
+//
+// Note that it is assumed that the slot key is a Keccak256 hash
+// of the byte key.
 func VerifyStorageProof(storageRoot common.Hash, slotKey common.Hash, proofNodes [][]byte) ([]byte, error) {
-	return verifyProof(storageRoot, slotKey[:], proofNodes)
+	data, err := verifyProof(storageRoot, slotKey[:], proofNodes)
+	if err != nil {
+		return nil, err
+	}
+
+	var val []byte
+	if err := rlp.DecodeBytes(data, &val); err != nil {
+		return nil, fmt.Errorf("failed to decode value: %w", err)
+	}
+
+	return val, nil
 }
 
-// verifyProof verifies a Merkle proof for a given key against a root hash.
+// verifyProof verifies a Merkle proof for a given key against
+// a root hash.
+//
+// Note that the returned value is RLP encoded.
 func verifyProof(rootHash common.Hash, key []byte, proofNodes [][]byte) ([]byte, error) {
 	wantHash := rootHash
 	nibbles := keyToNibbles(key)

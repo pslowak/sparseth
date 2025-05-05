@@ -26,7 +26,7 @@ type LeafNode struct {
 	// Path is the expanded path of the node.
 	Path []byte
 
-	// Value is the value of the node.
+	// Value is the RLP encoded value of the node.
 	Value []byte
 }
 
@@ -82,9 +82,9 @@ type BranchNode struct {
 	// Children are the children of the node.
 	Children [fullNodeLength - 1][]byte
 
-	// Value is the value of the node.
-	// The value is non-nil if this node
-	// terminates a key.
+	// Value is the RLP encoded value of
+	// the node. The value is non-nil if
+	// this node terminates a key.
 	Value []byte
 }
 

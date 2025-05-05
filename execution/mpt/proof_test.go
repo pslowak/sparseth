@@ -127,6 +127,36 @@ func TestVerifyStorageProof(t *testing.T) {
 		}
 	})
 
+	t.Run("should verify valid storage proof for max uint256 element", func(t *testing.T) {
+		storageRoot := common.HexToHash("0x5d85aa66d143fa6ff0a15deb90410bd8cd5a973c317d32d4d21e7731f73f35d2")
+		slotTwo := big.NewInt(2)
+		slotKey := crypto.Keccak256Hash(common.LeftPadBytes(slotTwo.Bytes(), 32))
+		proof := []string{
+			"0xf8718080a04355bd3061ad2d17e0782413925b4fd81a56bd162d91eedb2a00d6c87611471480a05cec288029f80518906c03ad962a0d47ecdf98680e3d85558885e7f3e7ac4bee808080808080a0df88c3b964bcf271c4442d25b05557a4baae5d23952f3c1d0149139f7127c68f8080808080",
+			"0xf843a0305787fa12a823e0f2b7631cc41b3ba8828b3321ca811111fa75cd3aa3bb5acea1a0ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+		}
+
+		proofNodes := make([][]byte, len(proof))
+		for idx, node := range proof {
+			bytez, err := hex.DecodeString(strings.TrimPrefix(node, "0x"))
+			if err != nil {
+				t.Fatalf("failed to decode node %d %v", idx, node)
+			}
+
+			proofNodes[idx] = bytez
+		}
+
+		value, err := VerifyStorageProof(storageRoot, slotKey, proofNodes)
+		if err != nil {
+			t.Errorf("expected no error, got: %v", err)
+		}
+
+		expectedValue := bytes.Repeat([]byte{0xff}, 32)
+		if !bytes.Equal(expectedValue, value) {
+			t.Errorf("expected storage value %x, got %x", expectedValue, value)
+		}
+	})
+
 	t.Run("should return error on corrupted storage proof", func(t *testing.T) {
 		storageRoot := common.HexToHash("0xf258b1c6d5ee7f6f3549117fb0ac79118d5ad19b9c027f9b8e1471ca519b3b6c")
 		paddedSlotZero := make([]byte, 32)
