@@ -14,9 +14,10 @@ type Listener struct {
 	log        log.Logger
 }
 
-// New creates a new block Listener that listens
-// for block headers from the specified channel.
-func New(ch <-chan *types.Header, dispatcher *Dispatcher, log log.Logger) *Listener {
+// NewListener creates a new block Listener that
+// listens for block headers from the specified
+// channel.
+func NewListener(ch <-chan *types.Header, dispatcher *Dispatcher, log log.Logger) *Listener {
 	return &Listener{
 		sub:        ch,
 		dispatcher: dispatcher,
