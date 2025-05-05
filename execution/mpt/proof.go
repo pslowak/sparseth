@@ -5,8 +5,17 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
+	"math/big"
 	"sparseth/execution/mpt/trienode"
 )
+
+// Account represents an Ethereum account.
+type Account struct {
+	Nonce       uint64      `json:"nonce"`
+	Balance     *big.Int    `json:"balance"`
+	StorageRoot common.Hash `json:"storageRoot"`
+	CodeHash    common.Hash `json:"codeHash"`
+}
 
 // VerifyAccountProof verifies a Merkle proof for an Ethereum
 // account against a given state root.
