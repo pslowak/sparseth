@@ -27,7 +27,7 @@ contract Storage {
      * @param val - uint256 to be stored
      */
     function store(uint256 val) external {
-        head = keccak256(abi.encodePacked(head, msg.sender, val));
+        head = keccak256(abi.encode(head, msg.sender, val));
         value = val;
 
         emit StorageUpdate(msg.sender, val);
