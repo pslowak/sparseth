@@ -1,0 +1,46 @@
+package datastore
+
+import "errors"
+
+var (
+	// ErrDbClosed is returned when the
+	//datastore is already closed
+	ErrDbClosed = errors.New("datastore closed")
+
+	// ErrKeyNotFound is returned if the requested
+	// key is not found in the datastore
+	ErrKeyNotFound = errors.New("key not found")
+)
+
+// KeyValReader defines read operations
+// for a key-val store.
+type KeyValReader interface {
+	// Has checks if the specified key is
+	// present in the key-val store.
+	Has(key []byte) (bool, error)
+
+	// Get retrieves the specified key if
+	// it is present in the key-val store.
+	Get(key []byte) ([]byte, error)
+}
+
+// KeyValWriter encapsulates write operations
+// of the key val store.
+type KeyValWriter interface {
+	// Put inserts the specified key
+	// into the key-val store.
+	Put(key, value []byte) error
+
+	// Delete removes the specified key
+	// from the key-val store.
+	Delete(key []byte) error
+}
+
+type KeyValStore interface {
+	KeyValReader
+	KeyValWriter
+
+	// Close closes the underlying
+	// key-val store.
+	Close() error
+}
