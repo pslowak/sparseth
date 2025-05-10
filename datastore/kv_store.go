@@ -24,12 +24,16 @@ type KeyValReader interface {
 	Get(key []byte) ([]byte, error)
 }
 
-// KeyValWriter encapsulates write operations
+// KeyValWriter defines write operations
 // of the key val store.
 type KeyValWriter interface {
-	// Put inserts the specified key
-	// into the key-val store.
+	// Put inserts the specified key-val
+	// pair into the key-val store.
 	Put(key, value []byte) error
+
+	// PutBatch inserts multiple key-val
+	// pairs into the key-val store.
+	PutBatch(pairs map[string][]byte) error
 
 	// Delete removes the specified key
 	// from the key-val store.

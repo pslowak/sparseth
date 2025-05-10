@@ -211,6 +211,58 @@ func TestBadgerDb_Put(t *testing.T) {
 	})
 }
 
+func TestBadgerDb_PutBatch(t *testing.T) {
+	t.Run("should insert keys without error", func(t *testing.T) {
+		db, err := New(t.TempDir())
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		defer db.Close()
+
+		pairs := map[string][]byte{
+			"first_key":  []byte("first_val"),
+			"second_key": []byte("second_val"),
+		}
+		if err = db.PutBatch(pairs); err != nil {
+			t.Errorf("expected no error, got %v", err)
+		}
+	})
+
+	t.Run("should get previously stored vals", func(t *testing.T) {
+		db, err := New(t.TempDir())
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		defer db.Close()
+
+		firstVal := []byte("first_val")
+		secondVal := []byte("second_val")
+		pairs := map[string][]byte{
+			"first_key":  firstVal,
+			"second_key": secondVal,
+		}
+		if err = db.PutBatch(pairs); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		firstRes, err := db.Get([]byte("first_key"))
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if !bytes.Equal(firstRes, firstVal) {
+			t.Errorf("expected val to be %v, got %v", firstVal, firstRes)
+		}
+
+		secondRes, err := db.Get([]byte("second_key"))
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if !bytes.Equal(secondRes, secondVal) {
+			t.Errorf("expected val to be %v, got %v", secondVal, secondRes)
+		}
+	})
+}
+
 func TestBadgerDb_Delete(t *testing.T) {
 	t.Run("should delete without error", func(t *testing.T) {
 		db, err := New(t.TempDir())

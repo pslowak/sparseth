@@ -73,6 +73,22 @@ func (db *Database) Put(key, value []byte) error {
 	return nil
 }
 
+// PutBatch inserts multiple key-value pairs
+// into the database.
+func (db *Database) PutBatch(pairs map[string][]byte) error {
+	db.lock.Lock()
+	defer db.lock.Unlock()
+
+	if db.db == nil {
+		return datastore.ErrDbClosed
+	}
+
+	for k, v := range pairs {
+		db.db[k] = copyBytes(v)
+	}
+	return nil
+}
+
 // Delete removes the specified key from the database.
 func (db *Database) Delete(key []byte) error {
 	db.lock.Lock()

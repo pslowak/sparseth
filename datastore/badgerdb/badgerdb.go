@@ -68,6 +68,21 @@ func (db *Database) Put(key, val []byte) error {
 	})
 }
 
+// PutBatch inserts multiple key-value pairs
+// into the datastore.
+func (db *Database) PutBatch(pairs map[string][]byte) error {
+	wb := db.db.NewWriteBatch()
+	defer wb.Cancel()
+
+	for k, v := range pairs {
+		if err := wb.Set([]byte(k), v); err != nil {
+			return fmt.Errorf("failed to set %s: %w", k, err)
+		}
+	}
+
+	return wb.Flush()
+}
+
 // Delete removes the specified key from
 // the datastore.
 func (db *Database) Delete(key []byte) error {
