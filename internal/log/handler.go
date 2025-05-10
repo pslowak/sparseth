@@ -22,6 +22,8 @@ func (h *TerminalHandler) Handle(_ context.Context, r slog.Record) error {
 
 	color := ""
 	switch r.Level {
+	case slog.LevelDebug:
+		color = "\x1b[37m" // grey
 	case slog.LevelInfo:
 		color = "\x1b[32m" // green
 	case slog.LevelWarn:
