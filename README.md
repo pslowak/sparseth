@@ -11,7 +11,8 @@ Sparse node protocol for Ethereum written in Go.
 SPARSETH is designed to efficiently track smart contract events using a hash chain mechanism.
 To make a contract compatible with the sparse node, follow the approach shown in `Storage.sol`.
 The contract maintains a `head` value which is updated on each emitted event by hashing the 
-previous `head` together with all event fields in the declared order.
+previous `head` together with all event fields in the declared order. Note that all events
+used in the hash chain must be non-anonymous.
 
 By default, the sparse node looks for a `bytes32` variable named `head` in the contract's 
 storage layout. If such a variable is not found, the sparse node falls back to reading 
