@@ -1,45 +1,58 @@
-package memorydb
+package badger
 
 import (
 	"bytes"
 	"testing"
 )
 
-func TestMemDb_New(t *testing.T) {
+func TestBadgerDb_New(t *testing.T) {
 	t.Run("should create non-nil db", func(t *testing.T) {
-		db := New()
+		db, err := New(t.TempDir())
 
+		if err != nil {
+			t.Errorf("expected no error, got %v", err)
+		}
 		if db == nil {
 			t.Errorf("expected non-nil db, got nil")
 		}
 	})
 }
 
-func TestMemDb_Close(t *testing.T) {
+func TestBadgerDb_Close(t *testing.T) {
 	t.Run("should close db", func(t *testing.T) {
-		db := New()
+		db, err := New(t.TempDir())
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
 
-		if err := db.Close(); err != nil {
+		if err = db.Close(); err != nil {
 			t.Errorf("expected no error, got %v", err)
 		}
 	})
 
 	t.Run("consecutive calls should fail after close", func(t *testing.T) {
-		db := New()
-
-		if err := db.Close(); err != nil {
+		db, err := New(t.TempDir())
+		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		if _, err := db.Has([]byte("some_key")); err == nil {
+		if err = db.Close(); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		if _, err = db.Has([]byte("some_key")); err == nil {
 			t.Errorf("expected error, got nil")
 		}
 	})
 }
 
-func TestMemDb_Has(t *testing.T) {
+func TestBadgerDb_Has(t *testing.T) {
 	t.Run("should not find key if no key in db", func(t *testing.T) {
-		db := New()
+		db, err := New(t.TempDir())
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		defer db.Close()
 
 		exists, err := db.Has([]byte("some_key"))
 		if err != nil {
@@ -51,9 +64,13 @@ func TestMemDb_Has(t *testing.T) {
 	})
 
 	t.Run("should not find non-existing key", func(t *testing.T) {
-		db := New()
+		db, err := New(t.TempDir())
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		defer db.Close()
 
-		if err := db.Put([]byte("existing_key"), []byte("existing_value")); err != nil {
+		if err = db.Put([]byte("existing_key"), []byte("existing_value")); err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
@@ -67,9 +84,13 @@ func TestMemDb_Has(t *testing.T) {
 	})
 
 	t.Run("should find existing key", func(t *testing.T) {
-		db := New()
+		db, err := New(t.TempDir())
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		defer db.Close()
 
-		if err := db.Put([]byte("existing_key"), []byte("existing_value")); err != nil {
+		if err = db.Put([]byte("existing_key"), []byte("existing_value")); err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
@@ -83,9 +104,13 @@ func TestMemDb_Has(t *testing.T) {
 	})
 }
 
-func TestMemDb_Get(t *testing.T) {
+func TestBadgerDb_Get(t *testing.T) {
 	t.Run("should return nil for non-existing key", func(t *testing.T) {
-		db := New()
+		db, err := New(t.TempDir())
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		defer db.Close()
 
 		val, err := db.Get([]byte("non_existing_key"))
 		if err == nil {
@@ -97,13 +122,16 @@ func TestMemDb_Get(t *testing.T) {
 	})
 
 	t.Run("should return val for existing key", func(t *testing.T) {
-		db := New()
+		db, err := New(t.TempDir())
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		defer db.Close()
 
 		key := []byte("key")
 		val := []byte("val")
-		err := db.Put(key, val)
-		if err != nil {
-			t.Errorf("expected no error, got %v", err)
+		if err = db.Put(key, val); err != nil {
+			t.Fatalf("expected no error, got %v", err)
 		}
 
 		res, err := db.Get(key)
@@ -116,23 +144,29 @@ func TestMemDb_Get(t *testing.T) {
 	})
 }
 
-func TestMemDb_Put(t *testing.T) {
+func TestBadgerDb_Put(t *testing.T) {
 	t.Run("should insert key without error", func(t *testing.T) {
-		db := New()
-
-		err := db.Put([]byte("key"), []byte("val"))
+		db, err := New(t.TempDir())
 		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		defer db.Close()
+
+		if err = db.Put([]byte("key"), []byte("val")); err != nil {
 			t.Errorf("expected no error, got %v", err)
 		}
 	})
 
 	t.Run("should get previously stored val", func(t *testing.T) {
-		db := New()
+		db, err := New(t.TempDir())
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		defer db.Close()
 
 		key := []byte("key")
 		val := []byte("val")
-		err := db.Put(key, val)
-		if err != nil {
+		if err = db.Put(key, val); err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
@@ -146,16 +180,24 @@ func TestMemDb_Put(t *testing.T) {
 	})
 
 	t.Run("should override val", func(t *testing.T) {
-		db := New()
+		db, err := New(t.TempDir())
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		defer db.Close()
 
 		key := []byte("key")
 		first := []byte("first")
-		if err := db.Put(key, first); err != nil {
+		if err = db.Put(key, first); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
 		second := []byte("second")
-		if err := db.Put(key, second); err != nil {
+		err = db.Put(key, second)
+		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
@@ -171,19 +213,27 @@ func TestMemDb_Put(t *testing.T) {
 
 func TestBadgerDb_PutBatch(t *testing.T) {
 	t.Run("should insert keys without error", func(t *testing.T) {
-		db := New()
+		db, err := New(t.TempDir())
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		defer db.Close()
 
 		pairs := map[string][]byte{
 			"first_key":  []byte("first_val"),
 			"second_key": []byte("second_val"),
 		}
-		if err := db.PutBatch(pairs); err != nil {
+		if err = db.PutBatch(pairs); err != nil {
 			t.Errorf("expected no error, got %v", err)
 		}
 	})
 
 	t.Run("should get previously stored vals", func(t *testing.T) {
-		db := New()
+		db, err := New(t.TempDir())
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		defer db.Close()
 
 		firstVal := []byte("first_val")
 		secondVal := []byte("second_val")
@@ -191,7 +241,7 @@ func TestBadgerDb_PutBatch(t *testing.T) {
 			"first_key":  firstVal,
 			"second_key": secondVal,
 		}
-		if err := db.PutBatch(pairs); err != nil {
+		if err = db.PutBatch(pairs); err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
@@ -213,29 +263,37 @@ func TestBadgerDb_PutBatch(t *testing.T) {
 	})
 }
 
-func TestMemDb_Delete(t *testing.T) {
+func TestBadgerDb_Delete(t *testing.T) {
 	t.Run("should delete without error", func(t *testing.T) {
-		db := New()
+		db, err := New(t.TempDir())
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		defer db.Close()
 
 		key := []byte("key")
-		if err := db.Put(key, []byte("val")); err != nil {
+		if err = db.Put(key, []byte("val")); err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		if err := db.Delete(key); err != nil {
+		if err = db.Delete(key); err != nil {
 			t.Errorf("expected no error, got %v", err)
 		}
 	})
 
 	t.Run("should delete existing key", func(t *testing.T) {
-		db := New()
-		key := []byte("key")
+		db, err := New(t.TempDir())
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		defer db.Close()
 
-		if err := db.Put(key, []byte("val")); err != nil {
+		key := []byte("key")
+		if err = db.Put(key, []byte("val")); err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		if err := db.Delete(key); err != nil {
+		if err = db.Delete(key); err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 

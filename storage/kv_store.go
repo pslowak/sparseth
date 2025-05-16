@@ -1,14 +1,14 @@
-package datastore
+package storage
 
 import "errors"
 
 var (
 	// ErrDbClosed is returned when the
-	//datastore is already closed
-	ErrDbClosed = errors.New("datastore closed")
+	//storage is already closed
+	ErrDbClosed = errors.New("storage closed")
 
 	// ErrKeyNotFound is returned if the requested
-	// key is not found in the datastore
+	// key is not found in the storage
 	ErrKeyNotFound = errors.New("key not found")
 )
 

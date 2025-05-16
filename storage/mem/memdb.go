@@ -1,7 +1,7 @@
-package memorydb
+package mem
 
 import (
-	"sparseth/datastore"
+	"sparseth/storage"
 	"sync"
 )
 
@@ -35,7 +35,7 @@ func (db *Database) Has(key []byte) (bool, error) {
 	defer db.lock.RUnlock()
 
 	if db.db == nil {
-		return false, datastore.ErrDbClosed
+		return false, storage.ErrDbClosed
 	}
 
 	_, ok := db.db[string(key)]
@@ -49,14 +49,14 @@ func (db *Database) Get(key []byte) ([]byte, error) {
 	defer db.lock.RUnlock()
 
 	if db.db == nil {
-		return nil, datastore.ErrDbClosed
+		return nil, storage.ErrDbClosed
 	}
 
 	if val, ok := db.db[string(key)]; ok {
 		return copyBytes(val), nil
 	}
 
-	return nil, datastore.ErrKeyNotFound
+	return nil, storage.ErrKeyNotFound
 }
 
 // Put inserts the specified key-value pair into
@@ -66,7 +66,7 @@ func (db *Database) Put(key, value []byte) error {
 	defer db.lock.Unlock()
 
 	if db.db == nil {
-		return datastore.ErrDbClosed
+		return storage.ErrDbClosed
 	}
 
 	db.db[string(key)] = copyBytes(value)
@@ -80,7 +80,7 @@ func (db *Database) PutBatch(pairs map[string][]byte) error {
 	defer db.lock.Unlock()
 
 	if db.db == nil {
-		return datastore.ErrDbClosed
+		return storage.ErrDbClosed
 	}
 
 	for k, v := range pairs {
@@ -95,7 +95,7 @@ func (db *Database) Delete(key []byte) error {
 	defer db.lock.Unlock()
 
 	if db.db == nil {
-		return datastore.ErrDbClosed
+		return storage.ErrDbClosed
 	}
 
 	delete(db.db, string(key))

@@ -1,10 +1,10 @@
-package badgerdb
+package badger
 
 import (
 	"errors"
 	"fmt"
 	"github.com/dgraph-io/badger/v4"
-	"sparseth/datastore"
+	"sparseth/storage"
 )
 
 // Database is a badger key-val store.
@@ -55,7 +55,7 @@ func (db *Database) Get(key []byte) ([]byte, error) {
 		return err
 	})
 	if errors.Is(err, badger.ErrKeyNotFound) {
-		return nil, datastore.ErrKeyNotFound
+		return nil, storage.ErrKeyNotFound
 	}
 	return val, err
 }
