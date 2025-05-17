@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
+	"math/big"
 	"os"
 )
 
@@ -43,7 +44,11 @@ func LoadHeadSlot(path string) (common.Hash, error) {
 
 	for _, entry := range storageLayout.Storage {
 		if entry.Label == "head" && storageLayout.Types[entry.Type].Label == "bytes32" {
-			return common.HexToHash("0x" + entry.Slot), nil
+			slot := new(big.Int)
+			if _, ok := slot.SetString(entry.Slot, 10); !ok {
+				return common.Hash{}, fmt.Errorf("failed to parse slot: %s", entry.Slot)
+			}
+			return common.BigToHash(slot), nil
 		}
 	}
 
