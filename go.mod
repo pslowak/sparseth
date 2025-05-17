@@ -5,6 +5,7 @@ go 1.24.2
 require (
 	github.com/dgraph-io/badger/v4 v4.7.0
 	github.com/ethereum/go-ethereum v1.15.11
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -15,12 +16,10 @@ require (
 	github.com/consensys/gnark-crypto v0.17.0 // indirect
 	github.com/crate-crypto/go-eth-kzg v1.3.0 // indirect
 	github.com/crate-crypto/go-ipa v0.0.0-20240724233137-53bbb0ceb27a // indirect
-	github.com/crate-crypto/go-kzg-4844 v1.1.0 // indirect
 	github.com/deckarep/golang-set/v2 v2.8.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.0 // indirect
 	github.com/dgraph-io/ristretto/v2 v2.2.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/ethereum/c-kzg-4844 v1.0.3 // indirect
 	github.com/ethereum/c-kzg-4844/v2 v2.1.1 // indirect
 	github.com/ethereum/go-verkle v0.2.2 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect

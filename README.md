@@ -1,19 +1,46 @@
-# SPARSETH—A Sparse Node Protocol for Ethereum
-
-Sparse node protocol for Ethereum written in Go.
+# SPARSETH — A Sparse Node Protocol for Ethereum
 
 ![test](https://github.com/pslowak/sparseth/actions/workflows/go-test.yml/badge.svg)
 
-## Usage
+SPARSETH is a lightweight sparse node protocol for Ethereum written in Go.
 
-### Event Tracking
+## Quick Start
 
-SPARSETH is designed to efficiently track smart contract events using a hash chain mechanism.
-To make a contract compatible with the sparse node, follow the approach shown in `Storage.sol`.
-The contract maintains a `head` value which is updated on each emitted event by hashing the 
-previous `head` together with all event fields in the declared order. Note that all events
-used in the hash chain must be non-anonymous.
+Run the sparse node:
 
-By default, the sparse node looks for a `bytes32` variable named `head` in the contract's 
-storage layout. If such a variable is not found, the sparse node falls back to reading 
-from storage slot index `0`.
+```bash
+sparseth --rpc "<ETHEREUM_RPC_URL>"
+```
+
+## Configuration
+
+SPARSETH uses a `config.yaml` file to define monitored contracts.
+
+### Example Configuration
+
+```yaml
+accounts:
+  - address: "0x0000000000000000000000000000000000000000" # required
+    abi_path: "path/to/abi" # required
+    head_slot: "0x0" # optional
+    storage_path: "path/to/storage/layout" # optional
+```
+
+### Slot Resolution Priority
+
+When determining the storage slot for the hash chain head, SPARSETH follows this order:
+
+1. `head_slot` – Explicitly defined storage slot (e.g., `0x0`).
+2. `storage_path` – Auto-detects a `bytes32` variable named `head`in the storage layout.
+3. Default – Falls back to storage slot `0x0`.
+
+## Smart Contract Compatability
+
+For SPARSETH to track events efficiently, your contract must implement a hash chain
+mechanism. See `Storage.sol` for a reference implementation.
+
+### Requirements
+
+- All events tracked in the hash chain must be non-anonymous.
+- The contract must maintain a `bytes32` variable updated with each tracked event.
+- Event fields must be hashed in the declared order.

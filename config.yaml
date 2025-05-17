@@ -1,0 +1,5 @@
+accounts:
+  - address: "0x0000000000000000000000000000000000000000" # Required
+    abi_path: "build/Storage.abi" # Required
+    storage_path: "build/Storage_storage.json" # Optional
+    head_slot: "0x0" # Optional (default 0)
