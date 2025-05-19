@@ -1,4 +1,4 @@
-package event
+package monitor
 
 import (
 	"bytes"
@@ -22,7 +22,7 @@ func TestVerifier_VerifyLogs(t *testing.T) {
 			t.Fatalf("failed to pack event: %v", err)
 		}
 
-		logs := []types.Log{
+		logs := []*types.Log{
 			{
 				Topics: []common.Hash{
 					transferEvent.ID, // Signature
@@ -46,7 +46,7 @@ func TestVerifier_VerifyLogs(t *testing.T) {
 			t.Fatalf("failed to pack event: %v", err)
 		}
 
-		logs := []types.Log{
+		logs := []*types.Log{
 			{
 				Topics: []common.Hash{
 					transferEvent.ID, // Signature
@@ -72,7 +72,7 @@ func TestVerifier_VerifyLogs(t *testing.T) {
 		}
 
 		// Emitted 'transfer' and 'approval', but got only 'transfer'
-		logs := []types.Log{
+		logs := []*types.Log{
 			{
 				Topics: []common.Hash{
 					transferEvent.ID,
@@ -103,7 +103,7 @@ func TestVerifier_VerifyLogs(t *testing.T) {
 			t.Fatalf("failed to pack event: %v", err)
 		}
 
-		logs := []types.Log{
+		logs := []*types.Log{
 			{
 				Topics: []common.Hash{
 					transferEvent.ID,
@@ -142,7 +142,7 @@ func TestVerifier_VerifyLogs(t *testing.T) {
 			t.Fatalf("failed to pack event: %v", err)
 		}
 
-		logs := []types.Log{
+		logs := []*types.Log{
 			{
 				Topics: []common.Hash{
 					transferEvent.ID,
@@ -177,7 +177,7 @@ func TestVerifier_VerifyLogs(t *testing.T) {
 		}
 
 		// Emitted 'transfer' and 'approval', but got only 'transfer'
-		logs := []types.Log{
+		logs := []*types.Log{
 			{
 				Topics: []common.Hash{
 					transferEvent.ID,
@@ -211,7 +211,7 @@ func TestVerifier_VerifyLogs(t *testing.T) {
 			t.Fatalf("failed to pack event: %v", err)
 		}
 
-		logs := []types.Log{
+		logs := []*types.Log{
 			{
 				Topics: []common.Hash{
 					transferEvent.ID,

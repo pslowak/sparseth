@@ -54,7 +54,7 @@ func (ec *Client) Close() error {
 
 // GetLogsAtBlock fetches the logs for the specified
 // Ethereum account at the specified block.
-func (ec *Client) GetLogsAtBlock(ctx context.Context, address common.Address, blockNumber *big.Int) ([]types.Log, error) {
+func (ec *Client) GetLogsAtBlock(ctx context.Context, address common.Address, blockNumber *big.Int) ([]*types.Log, error) {
 	type query struct {
 		FromBlock string `json:"fromBlock"`
 		ToBlock   string `json:"toBlock"`
@@ -65,7 +65,7 @@ func (ec *Client) GetLogsAtBlock(ctx context.Context, address common.Address, bl
 		ToBlock:   fmt.Sprintf("0x%x", blockNumber),
 		Address:   address.Hex(),
 	}
-	var result []types.Log
+	var result []*types.Log
 	err := ec.c.CallContext(ctx, &result, "eth_getLogs", arg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get logs: %w", err)

@@ -1,4 +1,4 @@
-package event
+package monitor
 
 import (
 	"bytes"
@@ -35,7 +35,7 @@ func NewLogVerifier(abi abi.ABI, head common.Hash) *Verifier {
 
 // VerifyLogs validates the specified ordered slice
 // of logs against the expected hash chain head.
-func (v *Verifier) VerifyLogs(logs []types.Log, expected common.Hash) error {
+func (v *Verifier) VerifyLogs(logs []*types.Log, expected common.Hash) error {
 	curr := v.head
 
 	for _, l := range logs {
@@ -55,7 +55,7 @@ func (v *Verifier) VerifyLogs(logs []types.Log, expected common.Hash) error {
 
 // computeNewHead calculates the new hash chain
 // head after processing a single log.
-func (v *Verifier) computeNewHead(prev common.Hash, log types.Log) (common.Hash, error) {
+func (v *Verifier) computeNewHead(prev common.Hash, log *types.Log) (common.Hash, error) {
 	if len(log.Topics) < 1 {
 		return common.Hash{}, fmt.Errorf("log does not contain ID")
 	}
