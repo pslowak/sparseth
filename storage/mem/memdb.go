@@ -1,6 +1,7 @@
 package mem
 
 import (
+	"fmt"
 	"sparseth/storage"
 	"sync"
 )
@@ -100,6 +101,18 @@ func (db *Database) Delete(key []byte) error {
 
 	delete(db.db, string(key))
 	return nil
+}
+
+// Stat returns statistic data of the database.
+func (db *Database) Stat() (string, error) {
+	db.lock.RLock()
+	defer db.lock.RUnlock()
+
+	if db.db == nil {
+		return "", storage.ErrDbClosed
+	}
+
+	return fmt.Sprintf("Memory DB: %d keys stored", len(db.db)), nil
 }
 
 func copyBytes(b []byte) (copiedBytes []byte) {

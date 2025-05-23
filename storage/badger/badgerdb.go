@@ -90,3 +90,10 @@ func (db *Database) Delete(key []byte) error {
 		return txn.Delete(key)
 	})
 }
+
+// Stat returns statistic data of
+// the datastore.
+func (db *Database) Stat() (string, error) {
+	lsmSize, vlogSize := db.db.Size()
+	return fmt.Sprintf("Badger DB lsm size: %d bytes, value log file size: %d bytes", lsmSize, vlogSize), nil
+}

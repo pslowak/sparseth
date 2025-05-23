@@ -1,6 +1,9 @@
 package storage
 
-import "errors"
+import (
+	"errors"
+	"io"
+)
 
 var (
 	// ErrDbClosed is returned when the
@@ -40,11 +43,17 @@ type KeyValWriter interface {
 	Delete(key []byte) error
 }
 
+// KeyValueStater defines status operations
+// of the key val store.
+type KeyValueStater interface {
+	// Stat returns statistic data of
+	// the database.
+	Stat() (string, error)
+}
+
 type KeyValStore interface {
 	KeyValReader
 	KeyValWriter
-
-	// Close closes the underlying
-	// key-val store.
-	Close() error
+	KeyValueStater
+	io.Closer
 }
