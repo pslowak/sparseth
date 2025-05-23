@@ -97,3 +97,9 @@ func (db *Database) Stat() (string, error) {
 	lsmSize, vlogSize := db.db.Size()
 	return fmt.Sprintf("Badger DB lsm size: %d bytes, value log file size: %d bytes", lsmSize, vlogSize), nil
 }
+
+// SyncKeyValue ensures that all pending
+// writes are flushed to disk.
+func (db *Database) SyncKeyValue() error {
+	return db.db.Sync()
+}

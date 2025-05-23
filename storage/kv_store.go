@@ -51,9 +51,18 @@ type KeyValueStater interface {
 	Stat() (string, error)
 }
 
+// KeyValSyncer defines sync operations
+// of the key val store.
+type KeyValSyncer interface {
+	// SyncKeyValue ensures that all pending
+	// writes are flushed to disk.
+	SyncKeyValue() error
+}
+
 type KeyValStore interface {
 	KeyValReader
 	KeyValWriter
 	KeyValueStater
+	KeyValSyncer
 	io.Closer
 }

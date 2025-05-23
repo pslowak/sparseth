@@ -115,6 +115,20 @@ func (db *Database) Stat() (string, error) {
 	return fmt.Sprintf("Memory DB: %d keys stored", len(db.db)), nil
 }
 
+// SyncKeyValue SynKeyValue ensures that all
+// pending writes are flushed to disk. In a
+// memory database, this is a no-op.
+func (db *Database) SyncKeyValue() error {
+	db.lock.Lock()
+	defer db.lock.Unlock()
+
+	if db.db == nil {
+		return storage.ErrDbClosed
+	}
+
+	return nil
+}
+
 func copyBytes(b []byte) (copiedBytes []byte) {
 	if b == nil {
 		return nil
