@@ -70,7 +70,7 @@ func (s *EventStore) PutAll(logs []*types.Log) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	batch := make(map[string][]byte)
+	batch := s.db.NewBatchWithSize(len(logs))
 
 	for _, log := range logs {
 		encoded, err := rlp.EncodeToBytes(log)
@@ -78,10 +78,12 @@ func (s *EventStore) PutAll(logs []*types.Log) error {
 			return fmt.Errorf("failed to encode log: %w", err)
 		}
 
-		batch[logKey(log.TxHash, log.Index)] = encoded
+		if err = batch.Put([]byte(logKey(log.TxHash, log.Index)), encoded); err != nil {
+			return fmt.Errorf("failed to put log in batch: %w", err)
+		}
 	}
 
-	return s.db.PutBatch(batch)
+	return batch.Write()
 }
 
 // logKey generates a unique key for a log.

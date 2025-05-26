@@ -34,10 +34,6 @@ type KeyValWriter interface {
 	// pair into the key-val store.
 	Put(key, value []byte) error
 
-	// PutBatch inserts multiple key-val
-	// pairs into the key-val store.
-	PutBatch(pairs map[string][]byte) error
-
 	// Delete removes the specified key
 	// from the key-val store.
 	Delete(key []byte) error
@@ -64,5 +60,6 @@ type KeyValStore interface {
 	KeyValWriter
 	KeyValueStater
 	KeyValSyncer
+	Batcher
 	io.Closer
 }
