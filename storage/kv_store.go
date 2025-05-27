@@ -39,9 +39,9 @@ type KeyValWriter interface {
 	Delete(key []byte) error
 }
 
-// KeyValueStater defines status operations
+// KeyValStater defines status operations
 // of the key val store.
-type KeyValueStater interface {
+type KeyValStater interface {
 	// Stat returns statistic data of
 	// the database.
 	Stat() (string, error)
@@ -58,8 +58,9 @@ type KeyValSyncer interface {
 type KeyValStore interface {
 	KeyValReader
 	KeyValWriter
-	KeyValueStater
+	KeyValStater
 	KeyValSyncer
 	Batcher
+	Iteratee
 	io.Closer
 }
