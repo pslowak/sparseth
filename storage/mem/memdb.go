@@ -166,6 +166,12 @@ func (db *Database) NewIterator(prefix, start []byte) storage.Iterator {
 	}
 }
 
+// Compact flattens the database. In an
+// in-memory database, this is a no-op.
+func (db *Database) Compact([]byte, []byte) error {
+	return nil
+}
+
 // pair is a single key-value pair.
 type pair struct {
 	key string

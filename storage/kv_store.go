@@ -55,6 +55,19 @@ type KeyValSyncer interface {
 	SyncKeyValue() error
 }
 
+// Compacter defines compaction operations
+// of the key val store.
+type Compacter interface {
+	// Compact flattens the underlying key-val
+	// store for the given key range.
+	//
+	// If start is nil, the compaction starts
+	// before all keys in the data store. If
+	// limit is nil, the compaction ends after
+	// the last key in the data store.
+	Compact(start []byte, limit []byte) error
+}
+
 type KeyValStore interface {
 	KeyValReader
 	KeyValWriter
@@ -62,5 +75,6 @@ type KeyValStore interface {
 	KeyValSyncer
 	Batcher
 	Iteratee
+	Compacter
 	io.Closer
 }

@@ -130,6 +130,19 @@ func (db *Database) NewIterator(prefix, start []byte) storage.Iterator {
 	}
 }
 
+// Compact flattens the database. In badger, value
+// log file garbage collection is performed.
+func (db *Database) Compact([]byte, []byte) error {
+	if err := db.db.RunValueLogGC(0.5); err != nil {
+		if errors.Is(err, badger.ErrNoRewrite) {
+			// No compaction needed
+			return nil
+		}
+		return fmt.Errorf("failed to compact value log: %w", err)
+	}
+	return nil
+}
+
 // batch is a write-only batch for
 // the badger datastore.
 type batch struct {
