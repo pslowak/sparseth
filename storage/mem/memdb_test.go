@@ -206,6 +206,75 @@ func TestMemDb_Delete(t *testing.T) {
 	})
 }
 
+func TestMemDb_DeleteRange(t *testing.T) {
+	t.Run("should delete without error", func(t *testing.T) {
+		db := New()
+
+		key := []byte("key")
+		if err := db.Put(key, []byte("val")); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		if err := db.DeleteRange(key, []byte("zzz")); err != nil {
+			t.Errorf("expected no error, got %v", err)
+		}
+	})
+
+	t.Run("should delete existing key", func(t *testing.T) {
+		db := New()
+		key := []byte("key")
+
+		if err := db.Put(key, []byte("val")); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		if err := db.DeleteRange(key, []byte("zzz")); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		exists, err := db.Has(key)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if exists {
+			t.Errorf("expected key to not exist, got true")
+		}
+	})
+
+	t.Run("should only delete keys within range", func(t *testing.T) {
+		db := New()
+
+		// Indicates if key should exist
+		// after range deletion
+		keys := map[string]bool{
+			"alpha":   true,
+			"bravo":   false,
+			"charlie": false,
+			"delta":   true,
+		}
+
+		for k := range keys {
+			if err := db.Put([]byte(k), []byte("val")); err != nil {
+				t.Fatalf("expected no error, got %v", err)
+			}
+		}
+
+		if err := db.DeleteRange([]byte("bravo"), []byte("delta")); err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		for k, shouldExist := range keys {
+			exists, err := db.Has([]byte(k))
+			if err != nil {
+				t.Fatalf("expected no error, got %v", err)
+			}
+			if exists != shouldExist {
+				t.Errorf("expected key %s to exist: %v, got %v", k, shouldExist, exists)
+			}
+		}
+	})
+}
+
 func TestMemDb_Batch(t *testing.T) {
 	t.Run("should insert key-value pair without error", func(t *testing.T) {
 		db := New()

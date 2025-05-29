@@ -55,6 +55,14 @@ type KeyValSyncer interface {
 	SyncKeyValue() error
 }
 
+// KeyValRangeDeleter defines range deletion
+// operations of the key val store.
+type KeyValRangeDeleter interface {
+	// DeleteRange deletes all keys (and values)
+	// in the range [start,end).
+	DeleteRange(start, end []byte) error
+}
+
 // Compacter defines compaction operations
 // of the key val store.
 type Compacter interface {
@@ -73,6 +81,7 @@ type KeyValStore interface {
 	KeyValWriter
 	KeyValStater
 	KeyValSyncer
+	KeyValRangeDeleter
 	Batcher
 	Iteratee
 	Compacter

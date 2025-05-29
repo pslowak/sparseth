@@ -1,6 +1,7 @@
 package badger
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"github.com/dgraph-io/badger/v4"
@@ -87,6 +88,34 @@ func (db *Database) Stat() (string, error) {
 // writes are flushed to disk.
 func (db *Database) SyncKeyValue() error {
 	return db.db.Sync()
+}
+
+// DeleteRange deletes all keys (and values)
+// in the range [start, end).
+func (db *Database) DeleteRange(start, end []byte) error {
+	err := db.db.Update(func(tx *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		opts.PrefetchValues = false
+
+		it := tx.NewIterator(opts)
+		defer it.Close()
+
+		for it.Seek(start); it.Valid(); it.Next() {
+			key := it.Item().KeyCopy(nil)
+
+			if bytes.Compare(key, end) >= 0 {
+				break
+			}
+
+			if err := tx.Delete(key); err != nil {
+				return fmt.Errorf("failed to delete key %s: %w", string(key), err)
+			}
+		}
+
+		return nil
+	})
+
+	return err
 }
 
 // NewBatch creates a new write-only batch.

@@ -115,6 +115,25 @@ func (db *Database) SyncKeyValue() error {
 	return nil
 }
 
+// DeleteRange deletes all keys (and values)
+// in the range [start, end).
+func (db *Database) DeleteRange(start, end []byte) error {
+	db.lock.Lock()
+	defer db.lock.Unlock()
+
+	if db.db == nil {
+		return storage.ErrDbClosed
+	}
+
+	for key := range db.db {
+		if key >= string(start) && key < string(end) {
+			delete(db.db, key)
+		}
+	}
+
+	return nil
+}
+
 // NewBatch creates a new write-only batch.
 func (db *Database) NewBatch() storage.Batch {
 	return &batch{
