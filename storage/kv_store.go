@@ -2,6 +2,7 @@ package storage
 
 import (
 	"errors"
+	"github.com/ethereum/go-ethereum/ethdb"
 	"io"
 )
 
@@ -15,38 +16,6 @@ var (
 	ErrKeyNotFound = errors.New("key not found")
 )
 
-// KeyValReader defines read operations
-// for a key-val store.
-type KeyValReader interface {
-	// Has checks if the specified key is
-	// present in the key-val store.
-	Has(key []byte) (bool, error)
-
-	// Get retrieves the specified key if
-	// it is present in the key-val store.
-	Get(key []byte) ([]byte, error)
-}
-
-// KeyValWriter defines write operations
-// of the key val store.
-type KeyValWriter interface {
-	// Put inserts the specified key-val
-	// pair into the key-val store.
-	Put(key, value []byte) error
-
-	// Delete removes the specified key
-	// from the key-val store.
-	Delete(key []byte) error
-}
-
-// KeyValStater defines status operations
-// of the key val store.
-type KeyValStater interface {
-	// Stat returns statistic data of
-	// the database.
-	Stat() (string, error)
-}
-
 // KeyValSyncer defines sync operations
 // of the key val store.
 type KeyValSyncer interface {
@@ -55,35 +24,14 @@ type KeyValSyncer interface {
 	SyncKeyValue() error
 }
 
-// KeyValRangeDeleter defines range deletion
-// operations of the key val store.
-type KeyValRangeDeleter interface {
-	// DeleteRange deletes all keys (and values)
-	// in the range [start,end).
-	DeleteRange(start, end []byte) error
-}
-
-// Compacter defines compaction operations
-// of the key val store.
-type Compacter interface {
-	// Compact flattens the underlying key-val
-	// store for the given key range.
-	//
-	// If start is nil, the compaction starts
-	// before all keys in the data store. If
-	// limit is nil, the compaction ends after
-	// the last key in the data store.
-	Compact(start []byte, limit []byte) error
-}
-
 type KeyValStore interface {
-	KeyValReader
-	KeyValWriter
-	KeyValStater
+	ethdb.KeyValueReader
+	ethdb.KeyValueWriter
+	ethdb.KeyValueStater
 	KeyValSyncer
-	KeyValRangeDeleter
-	Batcher
-	Iteratee
-	Compacter
+	ethdb.KeyValueRangeDeleter
+	ethdb.Batcher
+	ethdb.Iteratee
+	ethdb.Compacter
 	io.Closer
 }
