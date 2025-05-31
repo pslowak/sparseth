@@ -10,9 +10,11 @@ import (
 	"sparseth/internal/log"
 )
 
+// Processor defines the core interface
+// for processing Ethereum block headers.
 type Processor interface {
 	// ProcessBlock handles a single block header.
-	ProcessBlock(ctx context.Context, header *types.Header) error
+	ProcessBlock(ctx context.Context, head *types.Header) error
 }
 
 // LogProcessor downloads, verifies and
@@ -22,49 +24,47 @@ type LogProcessor struct {
 	acc      *AccountInfo
 	verifier *Verifier
 	db       *ethstore.EventStore
-	rpc      *ethclient.Client
-	reader   *ethclient.StorageReader
+	provider *ethclient.Provider
 }
 
 // NewLogProcessor creates a new LogProcessor
 // for the specified account.
 func NewLogProcessor(acc *AccountInfo, rpc *ethclient.Client, store *ethstore.EventStore, log log.Logger) *LogProcessor {
-	reader := ethclient.NewStorageReader(rpc)
+	provider := ethclient.NewProvider(rpc)
 	verifier := NewLogVerifier(acc.ABI, acc.InitialHead)
 
 	return &LogProcessor{
 		log:      log.With("component", acc.Addr.Hex()+"-log-processor"),
 		acc:      acc,
-		rpc:      rpc,
 		db:       store,
-		reader:   reader,
+		provider: provider,
 		verifier: verifier,
 	}
 }
 
 // ProcessBlock processes the specified block header.
-func (p *LogProcessor) ProcessBlock(ctx context.Context, header *types.Header) error {
-	p.log.Debug("download logs for block", "num", header.Number, "hash", header.Hash().Hex())
-	logs, err := p.rpc.GetLogsAtBlock(ctx, p.acc.Addr, header.Number)
+func (p *LogProcessor) ProcessBlock(ctx context.Context, head *types.Header) error {
+	p.log.Debug("download logs for block", "num", head.Number, "hash", head.Hash().Hex())
+	logs, err := p.provider.GetLogsAtBlock(ctx, p.acc.Addr, head.Number)
 	if err != nil {
 		return err
 	}
 
-	expected, err := p.reader.ReadSlot(ctx, p.acc.Addr, p.acc.Slot, header)
+	expected, err := p.provider.GetStorageAtBlock(ctx, p.acc.Addr, p.acc.Slot, head)
 	if err != nil {
 		return fmt.Errorf("failed to read header value: %w", err)
 	}
 
-	p.log.Debug("verify logs for block", "num", header.Number, "hash", header.Hash().Hex())
+	p.log.Debug("verify logs for block", "num", head.Number, "hash", head.Hash().Hex())
 	if err = p.verifier.VerifyLogs(logs, common.BytesToHash(expected)); err != nil {
 		return fmt.Errorf("failed to process logs: %w", err)
 	}
 
-	p.log.Debug("store logs for block", "num", header.Number, "hash", header.Hash().Hex())
+	p.log.Debug("store logs for block", "num", head.Number, "hash", head.Hash().Hex())
 	if err = p.db.PutAll(logs); err != nil {
 		return fmt.Errorf("failed to store logs: %w", err)
 	}
 
-	p.log.Debug("block processed", "num", header.Number, "hash", header.Hash().Hex())
+	p.log.Debug("block processed", "num", head.Number, "hash", head.Hash().Hex())
 	return nil
 }

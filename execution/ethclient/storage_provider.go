@@ -9,32 +9,27 @@ import (
 	"sparseth/execution/mpt"
 )
 
-// StorageReader reads and verifies Ethereum
+// storageProvider provides verified Ethereum
 // smart contract storage values.
-type StorageReader struct {
+type storageProvider struct {
 	c *Client
 }
 
-// NewStorageReader creates a new StorageReader
+// newStorageProvider creates a new storageProvider
 // using the specified client.
-func NewStorageReader(client *Client) *StorageReader {
-	return &StorageReader{
+func newStorageProvider(client *Client) *storageProvider {
+	return &storageProvider{
 		c: client,
 	}
 }
 
-// Close shuts down the client connection.
-func (r *StorageReader) Close() error {
-	return r.c.Close()
-}
-
-// ReadSlot retrieves and verifies the value stored
-// at the specified storage slot for the specified
-// Ethereum account at the specified block.
-func (r *StorageReader) ReadSlot(ctx context.Context, account common.Address, slot common.Hash, header *types.Header) ([]byte, error) {
+// getSlot provides the verified value stored at the
+// specified storage slot for the specified Ethereum
+// account at the specified block.
+func (r *storageProvider) getSlot(ctx context.Context, account common.Address, slot common.Hash, header *types.Header) ([]byte, error) {
 	proof, err := r.c.GetProof(ctx, account, []common.Hash{slot}, header.Hash())
 	if err != nil {
-		return nil, fmt.Errorf("failed to get proof: %w", err)
+		return nil, fmt.Errorf("failed to get Proof: %w", err)
 	}
 
 	acc, err := mpt.VerifyAccountProof(header.Root, account, proof.AccountProof)
