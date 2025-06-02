@@ -3,8 +3,10 @@ package ethclient
 import (
 	"context"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rpc"
 	"math/big"
@@ -28,6 +30,97 @@ type Proof struct {
 	StorageRoot  common.Hash          `json:"storageRoot"`
 	AccountProof [][]byte             `json:"accountProof"`
 	StorageProof []*StorageProofEntry `json:"storageProof"`
+}
+
+func (p *Proof) UnmarshalJSON(msg []byte) error {
+	var raw struct {
+		Address      common.Address       `json:"address"`
+		Balance      *hexutil.Big         `json:"balance"`
+		Nonce        *hexutil.Big         `json:"nonce"`
+		CodeHash     common.Hash          `json:"codeHash"`
+		StorageRoot  common.Hash          `json:"storageRoot"`
+		AccountProof []string             `json:"accountProof"`
+		StorageProof []*StorageProofEntry `json:"storageProof"`
+	}
+
+	if err := json.Unmarshal(msg, &raw); err != nil {
+		return err
+	}
+
+	accProof, err := toProofNodes(raw.AccountProof)
+	if err != nil {
+		return err
+	}
+
+	p.Address = raw.Address
+	p.Balance = raw.Balance.ToInt()
+	p.Nonce = raw.Nonce.ToInt()
+	p.CodeHash = raw.CodeHash
+	p.StorageRoot = raw.StorageRoot
+	p.AccountProof = accProof
+	p.StorageProof = raw.StorageProof
+
+	return nil
+}
+
+func (sp *StorageProofEntry) UnmarshalJSON(msg []byte) error {
+	var raw struct {
+		Key   common.Hash `json:"key"`
+		Value string      `json:"value"`
+		Proof []string    `json:"proof"`
+	}
+
+	if err := json.Unmarshal(msg, &raw); err != nil {
+		return err
+	}
+
+	proof, err := toProofNodes(raw.Proof)
+	if err != nil {
+		return err
+	}
+
+	value, err := toByteSlice(raw.Value)
+	if err != nil {
+		return err
+	}
+
+	sp.Key = raw.Key
+	sp.Proof = proof
+	sp.Value = value
+
+	return nil
+}
+
+// toProofNodes converts a slice of hex-encoded
+// Merkle proof nodes into a slice of slices
+// suitable for verification.
+func toProofNodes(nodes []string) ([][]byte, error) {
+	proofNodes := make([][]byte, len(nodes))
+
+	for idx, node := range nodes {
+		bytez, err := hex.DecodeString(strings.TrimPrefix(node, "0x"))
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode node at index %d: %w", idx, err)
+		}
+		proofNodes[idx] = bytez
+	}
+	return proofNodes, nil
+}
+
+// toByteSlice converts a hex-encoded
+// string into a byte slice.
+func toByteSlice(val string) ([]byte, error) {
+	if strings.HasPrefix(val, "0x") {
+		val = strings.TrimPrefix(val, "0x")
+	}
+	if len(val)%2 != 0 {
+		val = "0" + val
+	}
+	bytez, err := hex.DecodeString(val)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode byte array: %w", err)
+	}
+	return bytez, nil
 }
 
 // Client is a wrapper for the
@@ -75,67 +168,20 @@ func (ec *Client) GetLogsAtBlock(ctx context.Context, address common.Address, bl
 
 // GetProof returns a Merkle proof for the specified
 // storage slots of the specified account at the
-// specified block.
+// specified block. If the slots are nil or empty,
+// the proof only contains the account proof.
 func (ec *Client) GetProof(ctx context.Context, account common.Address, slots []common.Hash, blockHash common.Hash) (*Proof, error) {
-	type rpcStorageProofEntry struct {
-		Key   string   `json:"key"`
-		Value string   `json:"value"`
-		Proof []string `json:"proof"`
-	}
-	type rpcProof struct {
-		Address      string                  `json:"address"`
-		Balance      string                  `json:"balance"`
-		Code         string                  `json:"codeHash"`
-		Nonce        string                  `json:"nonce"`
-		StorageHash  string                  `json:"storageHash"`
-		AccountProof []string                `json:"accountProof"`
-		StorageProof []*rpcStorageProofEntry `json:"storageProof"`
-	}
-
-	slotHex := make([]string, len(slots))
+	stringSlots := make([]string, len(slots))
 	for i, s := range slots {
-		slotHex[i] = s.Hex()
+		stringSlots[i] = s.Hex()
 	}
-
-	var resp rpcProof
-	err := ec.c.CallContext(ctx, &resp, "eth_getProof", account.Hex(), slotHex, blockHash.Hex())
+	var resp *Proof
+	err := ec.c.CallContext(ctx, &resp, "eth_getProof", account.Hex(), stringSlots, blockHash.Hex())
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch proof: %w", err)
+		return nil, fmt.Errorf("failed to get proof: %w", err)
 	}
-
-	// Parse fields
-	storageRoot := common.HexToHash(resp.StorageHash)
-	address := common.HexToAddress(resp.Address)
-	codeHash := common.HexToHash(resp.Code)
-
-	balance := new(big.Int)
-	balance.SetString(strings.TrimPrefix(resp.Balance, "0x"), 16)
-
-	nonce := new(big.Int)
-	nonce.SetString(strings.TrimPrefix(resp.Nonce, "0x"), 16)
-
-	accountProof, err := toProofNodes(resp.AccountProof)
-	if err != nil {
-		return nil, err
-	}
-
-	storageProof := make([]*StorageProofEntry, len(resp.StorageProof))
-	for i, entry := range resp.StorageProof {
-		key := common.HexToHash(entry.Key)
-		val, err := hex.DecodeString(strings.TrimPrefix(entry.Value, "0x"))
-		if err != nil {
-			return nil, fmt.Errorf("failed to decode value: %w", err)
-		}
-		proof, err := toProofNodes(entry.Proof)
-		if err != nil {
-			return nil, err
-		}
-		storageProof[i] = &StorageProofEntry{
-			Key:   key,
-			Value: val,
-			Proof: proof,
-		}
-	}
+	return resp, nil
+}
 
 	return &Proof{
 		Address:      address,
