@@ -13,6 +13,49 @@ import (
 	"strings"
 )
 
+// Client is a wrapper for the
+// Ethereum RPC API.
+type Client struct {
+	c *rpc.Client
+}
+
+// NewClient connects to an Ethereum RPC
+// provider at the specified URL.
+func NewClient(ctx context.Context, url string) (*Client, error) {
+	c, err := rpc.DialContext(ctx, url)
+	if err != nil {
+		return nil, err
+	}
+	return &Client{c: c}, nil
+}
+
+// Close shuts down the RPC client connection.
+func (ec *Client) Close() error {
+	ec.c.Close()
+	return nil
+}
+
+// GetLogsAtBlock fetches the logs for the specified
+// Ethereum account at the specified block.
+func (ec *Client) GetLogsAtBlock(ctx context.Context, addr common.Address, blockNum *big.Int) ([]*types.Log, error) {
+	type query struct {
+		FromBlock string `json:"fromBlock"`
+		ToBlock   string `json:"toBlock"`
+		Address   string `json:"address"`
+	}
+	arg := &query{
+		FromBlock: fmt.Sprintf("0x%x", blockNum),
+		ToBlock:   fmt.Sprintf("0x%x", blockNum),
+		Address:   addr.Hex(),
+	}
+	var result []*types.Log
+	err := ec.c.CallContext(ctx, &result, "eth_getLogs", arg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get logs: %w", err)
+	}
+	return result, nil
+}
+
 // StorageProofEntry represents a proof
 // for a key-value pair.
 type StorageProofEntry struct {
@@ -123,49 +166,6 @@ func toByteSlice(val string) ([]byte, error) {
 	return bytez, nil
 }
 
-// Client is a wrapper for the
-// Ethereum RPC API.
-type Client struct {
-	c *rpc.Client
-}
-
-// NewClient connects to an Ethereum RPC
-// provider at the specified URL.
-func NewClient(ctx context.Context, url string) (*Client, error) {
-	c, err := rpc.DialContext(ctx, url)
-	if err != nil {
-		return nil, err
-	}
-	return &Client{c: c}, nil
-}
-
-// Close shuts down the RPC client connection.
-func (ec *Client) Close() error {
-	ec.c.Close()
-	return nil
-}
-
-// GetLogsAtBlock fetches the logs for the specified
-// Ethereum account at the specified block.
-func (ec *Client) GetLogsAtBlock(ctx context.Context, address common.Address, blockNumber *big.Int) ([]*types.Log, error) {
-	type query struct {
-		FromBlock string `json:"fromBlock"`
-		ToBlock   string `json:"toBlock"`
-		Address   string `json:"address"`
-	}
-	arg := &query{
-		FromBlock: fmt.Sprintf("0x%x", blockNumber),
-		ToBlock:   fmt.Sprintf("0x%x", blockNumber),
-		Address:   address.Hex(),
-	}
-	var result []*types.Log
-	err := ec.c.CallContext(ctx, &result, "eth_getLogs", arg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get logs: %w", err)
-	}
-	return result, nil
-}
-
 // GetProof returns a Merkle proof for the specified
 // storage slots of the specified account at the
 // specified block. If the slots are nil or empty,
@@ -183,29 +183,20 @@ func (ec *Client) GetProof(ctx context.Context, account common.Address, slots []
 	return resp, nil
 }
 
-	return &Proof{
-		Address:      address,
-		Balance:      balance,
-		Nonce:        nonce,
-		CodeHash:     codeHash,
-		StorageRoot:  storageRoot,
-		AccountProof: accountProof,
-		StorageProof: storageProof,
-	}, err
-}
-
-// toProofNodes converts a slice of hex-encoded
-// Merkle proof nodes into a slice of slices
-// suitable for verification.
-func toProofNodes(nodes []string) ([][]byte, error) {
-	proofNodes := make([][]byte, len(nodes))
-
-	for idx, node := range nodes {
-		bytez, err := hex.DecodeString(strings.TrimPrefix(node, "0x"))
-		if err != nil {
-			return nil, fmt.Errorf("failed to decode node at index %d: %w", idx, err)
-		}
-		proofNodes[idx] = bytez
+// GetTransactionsAtBlock retrieves all transactions
+// from the block with the specified number.
+func (ec *Client) GetTransactionsAtBlock(ctx context.Context, blockNum *big.Int) (types.Transactions, error) {
+	type rpcBlock struct {
+		Txs []*types.Transaction `json:"transactions"`
 	}
-	return proofNodes, nil
+
+	var block *rpcBlock
+	err := ec.c.CallContext(ctx, &block, "eth_getBlockByNumber", fmt.Sprintf("0x%x", blockNum), true)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get transactions at block %s: %w", blockNum, err)
+	}
+	if block == nil {
+		return nil, fmt.Errorf("block %s not found", blockNum)
+	}
+	return block.Txs, err
 }
