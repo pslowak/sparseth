@@ -121,7 +121,6 @@ func (sp *StorageProofEntry) UnmarshalJSON(msg []byte) error {
 	if err != nil {
 		return err
 	}
-
 	value, err := toByteSlice(raw.Value)
 	if err != nil {
 		return err
@@ -139,7 +138,6 @@ func (sp *StorageProofEntry) UnmarshalJSON(msg []byte) error {
 // suitable for verification.
 func toProofNodes(nodes []string) ([][]byte, error) {
 	proofNodes := make([][]byte, len(nodes))
-
 	for idx, node := range nodes {
 		bytez, err := hex.DecodeString(strings.TrimPrefix(node, "0x"))
 		if err != nil {
@@ -199,4 +197,70 @@ func (ec *Client) GetTransactionsAtBlock(ctx context.Context, blockNum *big.Int)
 		return nil, fmt.Errorf("block %s not found", blockNum)
 	}
 	return block.Txs, err
+}
+
+// CreateAccessList creates an access list
+// for the specified transaction.
+func (ec *Client) CreateAccessList(ctx context.Context, tx *TransactionWithSender) (*types.AccessList, error) {
+	type req struct {
+		From                 common.Address               `json:"from"`
+		To                   *common.Address              `json:"to"`
+		Value                *hexutil.Big                 `json:"value,omitempty"`
+		Gas                  hexutil.Uint64               `json:"gas,omitempty"`
+		GasPrice             *hexutil.Big                 `json:"gasPrice,omitempty"`
+		MaxFeePerGas         *hexutil.Big                 `json:"maxFeePerGas,omitempty"`
+		MaxPriorityFeePerGas *hexutil.Big                 `json:"maxPriorityFeePerGas,omitempty"`
+		MaxFeePerBlobGas     *hexutil.Big                 `json:"maxFeePerBlobGas,omitempty"`
+		BlobVersionedHashes  []common.Hash                `json:"blobVersionedHashes,omitempty"`
+		AccessList           types.AccessList             `json:"accessList,omitempty"`
+		AuthorizationList    []types.SetCodeAuthorization `json:"authorizationList,omitempty"`
+		Input                hexutil.Bytes                `json:"input,omitempty"`
+	}
+
+	arg := &req{
+		From: tx.From,
+		To:   tx.Tx.To(),
+	}
+	if val := tx.Tx.Value(); val != nil {
+		arg.Value = (*hexutil.Big)(val)
+	}
+	if input := tx.Tx.Data(); len(input) > 0 {
+		arg.Input = input
+	}
+	if gas := tx.Tx.Gas(); gas != 0 {
+		arg.Gas = hexutil.Uint64(gas)
+	}
+	if gasPrice := tx.Tx.GasPrice(); gasPrice != nil {
+		arg.GasPrice = (*hexutil.Big)(gasPrice)
+	}
+	if gasFeeCap := tx.Tx.GasFeeCap(); gasFeeCap != nil {
+		arg.MaxFeePerGas = (*hexutil.Big)(gasFeeCap)
+	}
+	if gasTipCap := tx.Tx.GasTipCap(); gasTipCap != nil {
+		arg.MaxPriorityFeePerGas = (*hexutil.Big)(gasTipCap)
+	}
+	if blobGasFeeCap := tx.Tx.BlobGasFeeCap(); blobGasFeeCap != nil {
+		arg.MaxFeePerBlobGas = (*hexutil.Big)(blobGasFeeCap)
+	}
+	if blobHashes := tx.Tx.BlobHashes(); blobHashes != nil {
+		arg.BlobVersionedHashes = blobHashes
+	}
+	if accessList := tx.Tx.AccessList(); accessList != nil {
+		arg.AccessList = accessList
+	}
+	if authList := tx.Tx.SetCodeAuthorizations(); authList != nil {
+		arg.AuthorizationList = authList
+	}
+
+	type rpcAccessList struct {
+		AccessList *types.AccessList `json:"accessList"`
+	}
+
+	var accessList *rpcAccessList
+	err := ec.c.CallContext(ctx, &accessList, "eth_createAccessList", arg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create access list: %w", err)
+	}
+
+	return accessList.AccessList, nil
 }
