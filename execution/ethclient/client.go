@@ -206,7 +206,6 @@ func (ec *Client) CreateAccessList(ctx context.Context, tx *TransactionWithSende
 		From                 common.Address               `json:"from"`
 		To                   *common.Address              `json:"to"`
 		Value                *hexutil.Big                 `json:"value,omitempty"`
-		Gas                  hexutil.Uint64               `json:"gas,omitempty"`
 		GasPrice             *hexutil.Big                 `json:"gasPrice,omitempty"`
 		MaxFeePerGas         *hexutil.Big                 `json:"maxFeePerGas,omitempty"`
 		MaxPriorityFeePerGas *hexutil.Big                 `json:"maxPriorityFeePerGas,omitempty"`
@@ -226,9 +225,6 @@ func (ec *Client) CreateAccessList(ctx context.Context, tx *TransactionWithSende
 	}
 	if input := tx.Tx.Data(); len(input) > 0 {
 		arg.Input = input
-	}
-	if gas := tx.Tx.Gas(); gas != 0 {
-		arg.Gas = hexutil.Uint64(gas)
 	}
 	if gasPrice := tx.Tx.GasPrice(); gasPrice != nil {
 		arg.GasPrice = (*hexutil.Big)(gasPrice)
