@@ -202,7 +202,7 @@ func (ec *Client) GetTransactionsAtBlock(ctx context.Context, blockNum *big.Int)
 // CreateAccessList creates an access list for the
 // specified transaction based on the state at the
 // specified block number.
-func (ec *Client) CreateAccessList(ctx context.Context, tx *TransactionWithSender, blockNum *big.Int) (*types.AccessList, error) {
+func (ec *Client) CreateAccessList(ctx context.Context, tx *types.Transaction, from common.Address, blockNum *big.Int) (*types.AccessList, error) {
 	type req struct {
 		From                 common.Address               `json:"from"`
 		To                   *common.Address              `json:"to"`
@@ -218,34 +218,34 @@ func (ec *Client) CreateAccessList(ctx context.Context, tx *TransactionWithSende
 	}
 
 	arg := &req{
-		From: tx.From,
-		To:   tx.Tx.To(),
+		From: from,
+		To:   tx.To(),
 	}
-	if val := tx.Tx.Value(); val != nil {
+	if val := tx.Value(); val != nil {
 		arg.Value = (*hexutil.Big)(val)
 	}
-	if input := tx.Tx.Data(); len(input) > 0 {
+	if input := tx.Data(); len(input) > 0 {
 		arg.Input = input
 	}
-	if gasPrice := tx.Tx.GasPrice(); gasPrice != nil {
+	if gasPrice := tx.GasPrice(); gasPrice != nil {
 		arg.GasPrice = (*hexutil.Big)(gasPrice)
 	}
-	if gasFeeCap := tx.Tx.GasFeeCap(); gasFeeCap != nil {
+	if gasFeeCap := tx.GasFeeCap(); gasFeeCap != nil {
 		arg.MaxFeePerGas = (*hexutil.Big)(gasFeeCap)
 	}
-	if gasTipCap := tx.Tx.GasTipCap(); gasTipCap != nil {
+	if gasTipCap := tx.GasTipCap(); gasTipCap != nil {
 		arg.MaxPriorityFeePerGas = (*hexutil.Big)(gasTipCap)
 	}
-	if blobGasFeeCap := tx.Tx.BlobGasFeeCap(); blobGasFeeCap != nil {
+	if blobGasFeeCap := tx.BlobGasFeeCap(); blobGasFeeCap != nil {
 		arg.MaxFeePerBlobGas = (*hexutil.Big)(blobGasFeeCap)
 	}
-	if blobHashes := tx.Tx.BlobHashes(); blobHashes != nil {
+	if blobHashes := tx.BlobHashes(); blobHashes != nil {
 		arg.BlobVersionedHashes = blobHashes
 	}
-	if accessList := tx.Tx.AccessList(); accessList != nil {
+	if accessList := tx.AccessList(); accessList != nil {
 		arg.AccessList = accessList
 	}
-	if authList := tx.Tx.SetCodeAuthorizations(); authList != nil {
+	if authList := tx.SetCodeAuthorizations(); authList != nil {
 		arg.AuthorizationList = authList
 	}
 
