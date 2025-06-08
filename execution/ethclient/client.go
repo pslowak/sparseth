@@ -44,8 +44,8 @@ func (ec *Client) GetLogsAtBlock(ctx context.Context, addr common.Address, block
 		Address   string `json:"address"`
 	}
 	arg := &query{
-		FromBlock: fmt.Sprintf("0x%x", blockNum),
-		ToBlock:   fmt.Sprintf("0x%x", blockNum),
+		FromBlock: toBlockNumArg(blockNum),
+		ToBlock:   toBlockNumArg(blockNum),
 		Address:   addr.Hex(),
 	}
 	var result []*types.Log
@@ -189,7 +189,7 @@ func (ec *Client) GetTransactionsAtBlock(ctx context.Context, blockNum *big.Int)
 	}
 
 	var block *rpcBlock
-	err := ec.c.CallContext(ctx, &block, "eth_getBlockByNumber", fmt.Sprintf("0x%x", blockNum), true)
+	err := ec.c.CallContext(ctx, &block, "eth_getBlockByNumber", toBlockNumArg(blockNum), true)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get transactions at block %s: %w", blockNum, err)
 	}
@@ -199,9 +199,10 @@ func (ec *Client) GetTransactionsAtBlock(ctx context.Context, blockNum *big.Int)
 	return block.Txs, err
 }
 
-// CreateAccessList creates an access list
-// for the specified transaction.
-func (ec *Client) CreateAccessList(ctx context.Context, tx *TransactionWithSender) (*types.AccessList, error) {
+// CreateAccessList creates an access list for the
+// specified transaction based on the state at the
+// specified block number.
+func (ec *Client) CreateAccessList(ctx context.Context, tx *TransactionWithSender, blockNum *big.Int) (*types.AccessList, error) {
 	type req struct {
 		From                 common.Address               `json:"from"`
 		To                   *common.Address              `json:"to"`
@@ -253,10 +254,16 @@ func (ec *Client) CreateAccessList(ctx context.Context, tx *TransactionWithSende
 	}
 
 	var accessList *rpcAccessList
-	err := ec.c.CallContext(ctx, &accessList, "eth_createAccessList", arg)
+	err := ec.c.CallContext(ctx, &accessList, "eth_createAccessList", arg, toBlockNumArg(blockNum))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create access list: %w", err)
 	}
 
 	return accessList.AccessList, nil
+}
+
+// toBlockNumArg converts a *big.Int block number
+// to a hex-encoded string suitable for RPC calls.
+func toBlockNumArg(blockNum *big.Int) string {
+	return fmt.Sprintf("0x%x", blockNum)
 }
