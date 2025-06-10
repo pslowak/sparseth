@@ -181,6 +181,17 @@ func (ec *Client) GetProof(ctx context.Context, account common.Address, slots []
 	return resp, nil
 }
 
+// GetCodeAtBlock retrieves the code for the specified
+// Ethereum account at the specified block number.
+func (ec *Client) GetCodeAtBlock(ctx context.Context, addr common.Address, blockNum *big.Int) ([]byte, error) {
+	var code hexutil.Bytes
+	err := ec.c.CallContext(ctx, &code, "eth_getCode", addr.Hex(), toBlockNumArg(blockNum))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get code for address %s at block %s: %w", addr.Hex(), blockNum, err)
+	}
+	return code, nil
+}
+
 // GetTransactionsAtBlock retrieves all transactions
 // from the block with the specified number.
 func (ec *Client) GetTransactionsAtBlock(ctx context.Context, blockNum *big.Int) (types.Transactions, error) {
