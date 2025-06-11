@@ -11,28 +11,57 @@ import (
 // Unlike Client, Provider may add additional
 // verification to the provided data.
 type Provider struct {
-	log     *logProvider
-	storage *storageProvider
+	tx  *txProvider
+	log *logProvider
+	acc *accountProvider
 }
 
 // NewProvider creates a new Provider that
 // uses the specified Ethereum RPC client.
 func NewProvider(rpc *Client) *Provider {
 	return &Provider{
-		log:     newLogProvider(rpc),
-		storage: newStorageProvider(rpc),
+		tx:  newTxProvider(rpc),
+		log: newLogProvider(rpc),
+		acc: newAccountProvider(rpc),
 	}
+}
+
+// GetTxsAtBlock retrieves all transactions at the
+// specified block. This list is guaranteed to be
+// complete and valid. The returned transactions
+// are indexed by their position in the block.
+func (p *Provider) GetTxsAtBlock(ctx context.Context, header *types.Header) ([]*TransactionWithIndex, error) {
+	return p.tx.getTxsAtBlock(ctx, header)
 }
 
 // GetLogsAtBlock retrieves the logs for the specified
 // Ethereum account at the specified block.
-func (f *Provider) GetLogsAtBlock(ctx context.Context, acc common.Address, blockNum *big.Int) ([]*types.Log, error) {
-	return f.log.getLogsAtBlock(ctx, acc, blockNum)
+func (p *Provider) GetLogsAtBlock(ctx context.Context, acc common.Address, blockNum *big.Int) ([]*types.Log, error) {
+	return p.log.getLogsAtBlock(ctx, acc, blockNum)
+}
+
+// GetAccountAtBlock provides the verified account
+// at the specified block.
+func (p *Provider) GetAccountAtBlock(ctx context.Context, acc common.Address, head *types.Header) (*Account, error) {
+	return p.acc.getAccountAtBlock(ctx, acc, head)
 }
 
 // GetStorageAtBlock provides the verified value stored at
 // the specified storage slot for the specified Ethereum
 // account at the specified block.
-func (f *Provider) GetStorageAtBlock(ctx context.Context, acc common.Address, slot common.Hash, head *types.Header) ([]byte, error) {
-	return f.storage.getSlot(ctx, acc, slot, head)
+func (p *Provider) GetStorageAtBlock(ctx context.Context, acc common.Address, slot common.Hash, head *types.Header) ([]byte, error) {
+	return p.acc.getSlotAtBlock(ctx, acc, slot, head)
+}
+
+// GetCodeAtBlock provides the verified code of the
+// specified Ethereum account at the specified block.
+func (p *Provider) GetCodeAtBlock(ctx context.Context, acc common.Address, head *types.Header) ([]byte, error) {
+	return p.acc.getCodeAtBlock(ctx, acc, head)
+}
+
+// CreateAccessList creates an access list for the
+// specified transaction based on the state at the
+// specified block number.
+func (p *Provider) CreateAccessList(ctx context.Context, tx *TransactionWithSender, blockNum *big.Int) (*types.AccessList, error) {
+	return p.tx.createAccessList(ctx, tx, blockNum)
 }
