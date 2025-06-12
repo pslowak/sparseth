@@ -41,7 +41,8 @@ func (p *Provider) GetLogsAtBlock(ctx context.Context, acc common.Address, block
 }
 
 // GetAccountAtBlock provides the verified account
-// at the specified block.
+// at the specified block, or nil if no such account
+// exists.
 func (p *Provider) GetAccountAtBlock(ctx context.Context, acc common.Address, head *types.Header) (*Account, error) {
 	return p.acc.getAccountAtBlock(ctx, acc, head)
 }
@@ -49,12 +50,18 @@ func (p *Provider) GetAccountAtBlock(ctx context.Context, acc common.Address, he
 // GetStorageAtBlock provides the verified value stored at
 // the specified storage slot for the specified Ethereum
 // account at the specified block.
+//
+// Note that the specified account must exist at the
+// specified block, otherwise an error will be returned.
 func (p *Provider) GetStorageAtBlock(ctx context.Context, acc common.Address, slot common.Hash, head *types.Header) ([]byte, error) {
 	return p.acc.getSlotAtBlock(ctx, acc, slot, head)
 }
 
 // GetCodeAtBlock provides the verified code of the
 // specified Ethereum account at the specified block.
+//
+// Note that the specified account must exist at the
+// specified block, otherwise an error will be returned.
 func (p *Provider) GetCodeAtBlock(ctx context.Context, acc common.Address, head *types.Header) ([]byte, error) {
 	return p.acc.getCodeAtBlock(ctx, acc, head)
 }

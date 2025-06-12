@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"math/big"
 	"strings"
@@ -11,7 +12,34 @@ import (
 )
 
 func TestVerifyAccountProof(t *testing.T) {
-	t.Run("should verify valid account proof", func(t *testing.T) {
+	t.Run("should verify valid non-existent account proof", func(t *testing.T) {
+		stateRoot := common.HexToHash("0x8aa2e7ae450df6e34911f05025d754acd7b1817df5f12d4f6b342046aa17e941")
+		address := common.HexToAddress("0x1234567890123456789012345678901234567890")
+		proof := []string{
+			"0xf90131a0b91a8b7a7e9d3eab90afd81da3725030742f663c6ed8c26657bf00d842a9f4aaa01689b2a5203afd9ea0a0ca3765e4a538c7176e53eac1f8307a344ffc3c6176558080a0928d47f515f10a6b224f90d43fb27d0c0fc7079cf1b5a6fd5818cf18a71d49e0a04d5794121ef1a51608fa5b655bb3f861fb0a4fcecf8b7fecbf084b2d422a8bcf8080a04b29efa44ecf50c19b34950cf1d0f05e00568bcc873120fbea9a4e8439de0962a0d0a1bfe5b45d2d863a794f016450a4caca04f3b599e8d1652afca8b752935fd880a0bf9b09e442e044778b354abbadb5ec049d7f5e8b585c3966d476c4fbc9a181d28080a02bc9a924a7c932beb5f28762e225d5d835d28e4583814ce3a8a903dfa3e8cda8a0e5c557a0ce3894afeb44c37f3d24247f67dc76a174d8cacc360c1210eef60a7680",
+			"0xf873a036711c87f5d70aa0ec9dcbff648cab4ede7aec7218e4e2fef065f83253fc9108b850f84e808a021e19e0c9bab2400000a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+		}
+
+		proofNodes := make([][]byte, len(proof))
+		for idx, node := range proof {
+			bytez, err := hex.DecodeString(strings.TrimPrefix(node, "0x"))
+			if err != nil {
+				t.Fatalf("failed to decode node %d %v", idx, node)
+			}
+
+			proofNodes[idx] = bytez
+		}
+
+		account, err := VerifyAccountProof(stateRoot, address, proofNodes)
+		if err != nil {
+			t.Errorf("expected no error, got: %v", err)
+		}
+		if account != nil {
+			t.Errorf("expected nil account, got: %v", account)
+		}
+	})
+
+	t.Run("should verify valid existent account proof", func(t *testing.T) {
 		stateRoot := common.HexToHash("0x0136b96aa9d793cdccd5d1f4f03a576b0f64ce562dcb8d423414b5cff37e3d6c")
 		address := common.HexToAddress("0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266")
 		proof := []string{
@@ -98,6 +126,63 @@ func TestVerifyAccountProof(t *testing.T) {
 }
 
 func TestVerifyStorageProof(t *testing.T) {
+	t.Run("should verify valid empty storage proof", func(t *testing.T) {
+		storageRoot := common.HexToHash("0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421")
+		paddedSlotZero := hexutil.MustDecode("0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421")
+		slotKey := crypto.Keccak256Hash(paddedSlotZero)
+		proof := []string{
+			"0x80", // RLP-encoded empty string
+		}
+
+		proofNodes := make([][]byte, len(proof))
+		for idx, node := range proof {
+			bytez, err := hex.DecodeString(strings.TrimPrefix(node, "0x"))
+			if err != nil {
+				t.Fatalf("failed to decode node %d %v", idx, node)
+			}
+
+			proofNodes[idx] = bytez
+		}
+
+		value, err := VerifyStorageProof(storageRoot, slotKey, proofNodes)
+		if err != nil {
+			t.Errorf("expected no error, got: %v", err)
+		}
+		if value != nil {
+			t.Errorf("expected nil value, got: %v", value)
+		}
+	})
+
+	t.Run("should verify valid storage proof for non-existent value", func(t *testing.T) {
+		storageRoot := common.HexToHash("0xcd3d2777bf9b6ca2196369b873cfb288e6390b440a34b44008a40a986f2483ad")
+		paddedSlotZero := hexutil.MustDecode("0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421")
+		slotKey := crypto.Keccak256Hash(paddedSlotZero)
+		proof := []string{
+			"0xf90131a0b91a8b7a7e9d3eab90afd81da3725030742f663c6ed8c26657bf00d842a9f4aaa01689b2a5203afd9ea0a0ca3765e4a538c7176e53eac1f8307a344ffc3c6176558080a093424704626e8759ec27b8fc66a8e8ddb34c9338abfe23d23ca10fac2b295446a04d5794121ef1a51608fa5b655bb3f861fb0a4fcecf8b7fecbf084b2d422a8bcf8080a04b29efa44ecf50c19b34950cf1d0f05e00568bcc873120fbea9a4e8439de0962a0d0a1bfe5b45d2d863a794f016450a4caca04f3b599e8d1652afca8b752935fd880a0774fff0f678fcd6e0d8f51a67a964704315e0a1ddbc9751ad6d28955e7afc2ee8080a0ca8d2968cf85687214e1b801a0ccd83183cc9be804c52875612541b5d96af3b7a0e5c557a0ce3894afeb44c37f3d24247f67dc76a174d8cacc360c1210eef60a7680",
+			"0xe216a0623cf55f750405f1f210fa352060f5bad5d39616048e241ea02aa57309b4ac63",
+			"0xf85180808080808080a0a8e1976449a731de2f32877d6d48bfdad8c1a38b2903953ec678e52600523dfe80a050d5ecdf1715a59c4a2158467e7f7fae638a5cba117224999fd5c2ffa1f0546680808080808080",
+			"0xf86b9f379620706f8c652cfb6bf6e923f5156eadd5abaf4022a0b19d52ada089475fb849f84780830f4240a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+		}
+
+		proofNodes := make([][]byte, len(proof))
+		for idx, node := range proof {
+			bytez, err := hex.DecodeString(strings.TrimPrefix(node, "0x"))
+			if err != nil {
+				t.Fatalf("failed to decode node %d %v", idx, node)
+			}
+
+			proofNodes[idx] = bytez
+		}
+
+		value, err := VerifyStorageProof(storageRoot, slotKey, proofNodes)
+		if err != nil {
+			t.Errorf("expected no error, got: %v", err)
+		}
+		if value != nil {
+			t.Errorf("expected nil value, got: %v", value)
+		}
+	})
+
 	t.Run("should verify valid one element storage proof", func(t *testing.T) {
 		storageRoot := common.HexToHash("0xf258b1c6d5ee7f6f3549117fb0ac79118d5ad19b9c027f9b8e1471ca519b3b6c")
 		paddedSlotZero := make([]byte, 32)

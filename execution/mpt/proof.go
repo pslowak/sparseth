@@ -3,10 +3,12 @@ package mpt
 import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/ethereum/go-ethereum/trie"
 	"math/big"
-	"sparseth/execution/mpt/trienode"
+	"sparseth/storage/mem"
 )
 
 // Account represents an Ethereum account.
@@ -19,11 +21,18 @@ type Account struct {
 
 // VerifyAccountProof verifies a Merkle proof for an Ethereum
 // account against a given state root.
+//
+// If the account does not exist, but the proof is valid, nil
+// is returned.
 func VerifyAccountProof(stateRoot common.Hash, address common.Address, proofNodes [][]byte) (*Account, error) {
 	key := crypto.Keccak256(address[:])
 	data, err := verifyProof(stateRoot, key[:], proofNodes)
 	if err != nil {
 		return nil, err
+	}
+	if data == nil {
+		// Non-existent account
+		return nil, nil
 	}
 
 	var account Account
@@ -35,14 +44,24 @@ func VerifyAccountProof(stateRoot common.Hash, address common.Address, proofNode
 }
 
 // VerifyStorageProof verifies a Merkle proof for a given slot key
-// against a given storage root.
+// against a given storage root. If there is no value for the given
+// slot key, nil is returned.
 //
 // Note that it is assumed that the slot key is a Keccak256 hash
 // of the byte key.
 func VerifyStorageProof(storageRoot common.Hash, slotKey common.Hash, proofNodes [][]byte) ([]byte, error) {
+	if storageRoot == types.EmptyRootHash {
+		// No storage for any key
+		return nil, nil
+	}
+
 	data, err := verifyProof(storageRoot, slotKey[:], proofNodes)
 	if err != nil {
 		return nil, err
+	}
+	if data == nil {
+		// No value for the given slot key
+		return nil, nil
 	}
 
 	var val []byte
@@ -56,62 +75,17 @@ func VerifyStorageProof(storageRoot common.Hash, slotKey common.Hash, proofNodes
 // verifyProof verifies a Merkle proof for a given key against
 // a root hash.
 //
-// Note that the returned value is RLP encoded.
+// Note that the returned value is RLP encoded, or nil if no
+// such value exists.
 func verifyProof(rootHash common.Hash, key []byte, proofNodes [][]byte) ([]byte, error) {
-	wantHash := rootHash
-	nibbles := keyToNibbles(key)
+	proof := mem.New()
+	defer proof.Close()
 
-	for i, rlpNode := range proofNodes {
-		nodeHash := crypto.Keccak256Hash(rlpNode)
-		if len(rlpNode) >= 32 && wantHash != nodeHash {
-			return nil, fmt.Errorf("invalid proof: hash mismatch at node %d", i)
-		}
-
-		node, err := trienode.DecodeNode(rlpNode)
-		if err != nil {
-			return nil, fmt.Errorf("failed to decode node: %v", err)
-		}
-
-		if err := node.Validate(nibbles); err != nil {
-			return nil, fmt.Errorf("invalid node: %v", err)
-		}
-
-		switch n := node.(type) {
-		case *trienode.LeafNode:
-			return n.Value, nil
-		case *trienode.ExtensionNode:
-			nibbles = nibbles[len(n.Path):]
-			wantHash = resolveHash(n.Next)
-		case *trienode.BranchNode:
-			index := nibbles[0]
-			nibbles = nibbles[1:]
-			child := n.Children[index]
-			wantHash = resolveHash(child)
-		default:
-			return nil, fmt.Errorf("invalid node type")
+	for _, node := range proofNodes {
+		if err := proof.Put(crypto.Keccak256(node), node); err != nil {
+			return nil, fmt.Errorf("failed to put proof node: %w", err)
 		}
 	}
 
-	return nil, fmt.Errorf("incomplete proof")
-}
-
-// keyToNibbles converts a key byte slice to a
-// slice of nibbles (half-bytes).
-func keyToNibbles(key []byte) []byte {
-	nibbles := make([]byte, len(key)*2)
-	for i, b := range key {
-		nibbles[i*2] = b >> 4
-		nibbles[i*2+1] = b & 0x0F
-	}
-
-	return nibbles
-}
-
-// resolveHash returns the hash of the specified data.
-func resolveHash(data []byte) common.Hash {
-	if len(data) == common.HashLength {
-		return common.Hash(data)
-	}
-
-	return crypto.Keccak256Hash(data)
+	return trie.VerifyProof(rootHash, key, proof)
 }
