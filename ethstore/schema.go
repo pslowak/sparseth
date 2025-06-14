@@ -15,6 +15,10 @@ var (
 	// logPrefix is used to prefix all log entries in
 	// the key-val store.
 	logPrefix = prefix("log:")
+
+	// headerPrefix is used to prefix all block headers
+	// in the key-val store.
+	headerPrefix = prefix("header:")
 )
 
 // logKey generates a unique key for a log.
@@ -27,6 +31,31 @@ func logKey(txHash common.Hash, logIndex uint) []byte {
 	key = append(key, txHash.Bytes()...)
 	key = append(key, ':')
 	key = append(key, encodeNumber(uint64(logIndex))...)
+	return key
+}
+
+// headerHashKey generates a unique key
+// for a block header.
+//
+// headerHashKey = se:header:<hash>
+func headerHashKey(hash common.Hash) []byte {
+	// 1 for the separator (':')
+	key := make([]byte, 0, len(headerPrefix)+common.HashLength+1)
+	key = append(key, headerPrefix...)
+	key = append(key, hash.Bytes()...)
+	return key
+}
+
+// headerNumberKey generates a unique key
+// for a block header hash.
+//
+// headerNumberKey = se:header:<num>
+func headerNumberKey(num uint64) []byte {
+	// 1 for the separator (':'), 8 for uint64
+	key := make([]byte, 0, len(headerPrefix)+1+8)
+	key = append(key, headerPrefix...)
+	key = append(key, ':')
+	key = append(key, encodeNumber(num)...)
 	return key
 }
 
