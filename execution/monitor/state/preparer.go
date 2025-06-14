@@ -11,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/triedb"
 	"github.com/holiman/uint256"
-	"math/big"
+	"sparseth/ethstore"
 	"sparseth/execution/ethclient"
 	"sparseth/storage/mem"
 )
@@ -30,14 +30,17 @@ type transactionWithContext struct {
 // the execution of a block.
 type Preparer struct {
 	provider *ethclient.Provider
+	store    *ethstore.HeaderStore
 	cc       *params.ChainConfig
 }
 
 // NewPreparer creates a new Preparer with the
-// specified provider and chain configuration.
-func NewPreparer(provider *ethclient.Provider, cc *params.ChainConfig) *Preparer {
+// specified provider and chain configuration,
+// reading headers from the specified store.
+func NewPreparer(provider *ethclient.Provider, store *ethstore.HeaderStore, cc *params.ChainConfig) *Preparer {
 	return &Preparer{
 		provider: provider,
+		store:    store,
 		cc:       cc,
 	}
 }
@@ -61,7 +64,7 @@ func (p *Preparer) LoadState(ctx context.Context, header *types.Header, txs []*e
 		return nil, fmt.Errorf("failed to create new state: %w", err)
 	}
 
-	prev, err := p.provider.GetHeaderByNumber(ctx, header.Number.Sub(header.Number, big.NewInt(1)))
+	prev, err := p.store.GetByNumber(header.Number.Uint64() - 1)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get previous header: %w", err)
 	}
