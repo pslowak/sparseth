@@ -15,9 +15,6 @@ var (
 	// requested log is not found in the
 	// store.
 	ErrLogNotFound = errors.New("log not found")
-	// logPrefix is used to prefix all log
-	// entries in the key-val store.
-	logPrefix = "log"
 )
 
 // EventStore provides thread-safe
@@ -42,7 +39,7 @@ func (s *EventStore) GetLog(txHash common.Hash, logIndex uint) (*types.Log, erro
 	defer s.mu.RUnlock()
 
 	key := logKey(txHash, logIndex)
-	encoded, err := s.db.Get([]byte(key))
+	encoded, err := s.db.Get(key)
 	if err != nil {
 		if errors.Is(err, storage.ErrKeyNotFound) {
 			return nil, ErrLogNotFound
@@ -71,16 +68,10 @@ func (s *EventStore) PutAll(logs []*types.Log) error {
 		if err != nil {
 			return fmt.Errorf("failed to encode log: %w", err)
 		}
-
-		if err = batch.Put([]byte(logKey(log.TxHash, log.Index)), encoded); err != nil {
+		if err = batch.Put(logKey(log.TxHash, log.Index), encoded); err != nil {
 			return fmt.Errorf("failed to put log in batch: %w", err)
 		}
 	}
 
 	return batch.Write()
-}
-
-// logKey generates a unique key for a log.
-func logKey(txHash common.Hash, logIndex uint) string {
-	return fmt.Sprintf("%s:%s:%d", logPrefix, txHash.Hex(), logIndex)
 }
