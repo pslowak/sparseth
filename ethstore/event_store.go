@@ -35,12 +35,6 @@ func NewEventStore(db storage.KeyValStore) *EventStore {
 	}
 }
 
-// Close closes the underlying
-// key-val store.
-func (s *EventStore) Close() error {
-	return s.db.Close()
-}
-
 // GetLog retrieves a log by transaction
 // hash and log index.
 func (s *EventStore) GetLog(txHash common.Hash, logIndex uint) (*types.Log, error) {

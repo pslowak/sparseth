@@ -11,9 +11,9 @@ import (
 func TestEventStore_GetLog(t *testing.T) {
 	t.Run("should return error when log not found", func(t *testing.T) {
 		db := mem.New()
-		store := NewEventStore(db)
-		defer store.Close()
+		defer db.Close()
 
+		store := NewEventStore(db)
 		if _, err := store.GetLog(common.BytesToHash([]byte("tx-1")), 1); err == nil {
 			t.Errorf("should return error when log not found")
 		}
@@ -21,9 +21,9 @@ func TestEventStore_GetLog(t *testing.T) {
 
 	t.Run("should return previously stored log", func(t *testing.T) {
 		db := mem.New()
-		store := NewEventStore(db)
-		defer store.Close()
+		defer db.Close()
 
+		store := NewEventStore(db)
 		logs := []*types.Log{
 			{
 				TxHash: common.BytesToHash([]byte("tx-1")),
@@ -54,9 +54,9 @@ func TestEventStore_GetLog(t *testing.T) {
 func TestEventStore_PutAll(t *testing.T) {
 	t.Run("should store logs without error", func(t *testing.T) {
 		db := mem.New()
-		store := NewEventStore(db)
-		defer store.Close()
+		defer db.Close()
 
+		store := NewEventStore(db)
 		logs := []*types.Log{
 			{
 				TxHash: common.BytesToHash([]byte("tx-1")),
