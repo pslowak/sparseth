@@ -7,21 +7,21 @@ import (
 	"strconv"
 )
 
-// Validator validates monitoring configs.
-type Validator struct {
+// validator validates monitoring configs.
+type validator struct {
 	log log.Logger
 }
 
-// NewValidator creates a new Validator
+// newValidator creates a new validator
 // with the specified logger.
-func NewValidator(log log.Logger) *Validator {
-	return &Validator{
+func newValidator(log log.Logger) *validator {
+	return &validator{
 		log: log.With("component", "config-validator"),
 	}
 }
 
-// Validate validates the raw config.
-func (v *Validator) Validate(raw *config) error {
+// validate validates the raw config.
+func (v *validator) validate(raw *config) error {
 	for idx, acc := range raw.Accounts {
 		if err := v.validateAccount(acc); err != nil {
 			return fmt.Errorf("failed to validate account at index %d: %w", idx, err)
@@ -31,7 +31,7 @@ func (v *Validator) Validate(raw *config) error {
 }
 
 // validateAccount validates a single account config.
-func (v *Validator) validateAccount(acc *account) error {
+func (v *validator) validateAccount(acc *account) error {
 	if acc.Address == "" {
 		return fmt.Errorf("address is empty")
 	}

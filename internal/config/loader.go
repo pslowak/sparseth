@@ -31,8 +31,8 @@ func (a *account) isEOA() bool {
 // Loader reads the main config file.
 type Loader struct {
 	log       log.Logger
-	validator *Validator
-	parser    *Parser
+	validator *validator
+	parser    *parser
 }
 
 // NewLoader creates a new config Loader with
@@ -40,8 +40,8 @@ type Loader struct {
 func NewLoader(log log.Logger) *Loader {
 	return &Loader{
 		log:       log.With("component", "config-loader"),
-		validator: NewValidator(log),
-		parser:    NewParser(log),
+		validator: newValidator(log),
+		parser:    newParser(log),
 	}
 }
 
@@ -59,9 +59,9 @@ func (l *Loader) Load(path string) (*AppConfig, error) {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	if err = l.validator.Validate(raw); err != nil {
+	if err = l.validator.validate(raw); err != nil {
 		return nil, fmt.Errorf("failed to validate config: %w", err)
 	}
 
-	return l.parser.Parse(raw)
+	return l.parser.parse(raw)
 }

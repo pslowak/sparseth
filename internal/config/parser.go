@@ -11,23 +11,23 @@ import (
 	"strings"
 )
 
-// Parser handles the conversion of raw config
+// parser handles the conversion of raw config
 // data into structured AppConfig data.
-type Parser struct {
+type parser struct {
 	log log.Logger
 }
 
-// NewParser creates a new Parser
+// newParser creates a new parser
 // with the specified logger.
-func NewParser(log log.Logger) *Parser {
-	return &Parser{
+func newParser(log log.Logger) *parser {
+	return &parser{
 		log: log.With("component", "config-parser"),
 	}
 }
 
-// Parse parses the raw config data
+// parse parses the raw config data
 // into an AppConfig.
-func (p *Parser) Parse(raw *config) (*AppConfig, error) {
+func (p *parser) parse(raw *config) (*AppConfig, error) {
 	var accounts []*AccountConfig
 	for _, unparsed := range raw.Accounts {
 		parsed, err := p.parseAccount(unparsed)
@@ -43,7 +43,7 @@ func (p *Parser) Parse(raw *config) (*AppConfig, error) {
 }
 
 // parseAccount parses a single account.
-func (p *Parser) parseAccount(acc *account) (*AccountConfig, error) {
+func (p *parser) parseAccount(acc *account) (*AccountConfig, error) {
 	p.log.Debug("parse account", "address", acc.Address)
 
 	addr := common.HexToAddress(acc.Address)
@@ -79,7 +79,7 @@ func (p *Parser) parseAccount(acc *account) (*AccountConfig, error) {
 
 // parseABI reads the ABI file and parses
 // it into an Ethereum ABI structure.
-func (p *Parser) parseABI(path string) (abi.ABI, error) {
+func (p *parser) parseABI(path string) (abi.ABI, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return abi.ABI{}, fmt.Errorf("failed to read file %s: %w", path, err)
@@ -98,7 +98,7 @@ func (p *Parser) parseABI(path string) (abi.ABI, error) {
 //  1. Explicit head slot
 //  2. Storage layout file
 //  3. Defaults to slot 0x0
-func (p *Parser) parseHead(slot string, path string) (common.Hash, error) {
+func (p *parser) parseHead(slot string, path string) (common.Hash, error) {
 	if slot != "" {
 		p.log.Debug("head slot found in config", "slot", slot)
 		return common.HexToHash(slot), nil
