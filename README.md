@@ -24,7 +24,7 @@ In event mode, the node listens for events emitted specific smart contracts. To 
 contract must implement a hash chain that links each emitted event to the previous one using a cryptographic hash 
 function:
 
-$$H_n = \mathrm{hash}(H_{n-1}\,||\,\mathrm{event}_n)$$
+$$H_n = \mathrm{hash}(H_{n-1}||\mathrm{event}_n)$$
 
 Here, $H_n$ is the current hash chain head, $H_{n-1}$ is the previous head, and $\mathrm{event}_n$ represents the 
 contents of the current event. The latest hash chain head is stored within the contract. Upon receiving new events, the
@@ -32,7 +32,7 @@ node computes the new hash chain head and compares it with the one stored in the
 received events are not tampered with (integrity) or selectively omitted (completeness).
 
 > See the [Smart Contract Compatibility Guide](https://github.com/pslowak/sparseth/wiki/Smart-Contract-Compatibility-Guide) 
-to see how to make your smart contract compatible with SPARSETH's event mode.
+to learn how to make your smart contract compatible with SPARSETH's event mode.
 
 ### Sparse Mode
 
