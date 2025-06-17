@@ -19,14 +19,20 @@ type Client struct {
 	c *rpc.Client
 }
 
-// NewClient connects to an Ethereum RPC
-// provider at the specified URL.
-func NewClient(ctx context.Context, url string) (*Client, error) {
+// DialContext connects to an Ethereum
+// RPC provider at the specified URL.
+func DialContext(ctx context.Context, url string) (*Client, error) {
 	c, err := rpc.DialContext(ctx, url)
 	if err != nil {
 		return nil, err
 	}
 	return &Client{c: c}, nil
+}
+
+// NewClient creates a new Client instance
+// using an existing RPC client connection.
+func NewClient(c *rpc.Client) *Client {
+	return &Client{c: c}
 }
 
 // Close shuts down the RPC client connection.
