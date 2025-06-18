@@ -45,6 +45,8 @@ func NewMockClient(log log.Logger, rpc *rpc.Client, db storage.KeyValStore) (*Mo
 // block headers. Also, sync-up is very rudimentary,
 // as it starts from the genesis block every time.
 func (c *MockClient) RunContext(ctx context.Context) error {
+	defer close(c.pub)
+
 	latest, err := c.ec.HeaderByNumber(ctx, big.NewInt(int64(rpc.LatestBlockNumber)))
 	if err != nil {
 		return fmt.Errorf("failed to fetch latest block: %w", err)
