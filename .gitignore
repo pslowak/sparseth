@@ -3,3 +3,6 @@
 
 # Datastore
 .db/
+
+# Build outputs
+build/
