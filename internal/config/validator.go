@@ -5,6 +5,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"sparseth/internal/log"
 	"strconv"
+	"strings"
 )
 
 // validator validates monitoring configs.
@@ -47,7 +48,8 @@ func (v *validator) validateAccount(acc *account) error {
 	}
 
 	if acc.HeadSlot != "" {
-		if _, err := strconv.ParseUint(acc.HeadSlot, 10, 64); err != nil {
+		head := strings.TrimPrefix(acc.HeadSlot, "0x")
+		if _, err := strconv.ParseUint(head, 10, 64); err != nil {
 			return fmt.Errorf("invalid head slot: %w", err)
 		}
 	}
