@@ -12,6 +12,19 @@ Run the sparse node:
 sparseth --rpc "<ETHEREUM_RPC_URL>"
 ```
 
+## Requirements
+
+Before building the node, make sure you have the following tools installed:
+- Go 1.24+
+- `solc` (Solidity compiler)
+- `anvil` (local Ethereum development node)
+
+Once installed, you can build the node using:
+
+```bash
+make all
+```
+
 ## Node Modes
 
 SPARSETH supports two modes of operation:
