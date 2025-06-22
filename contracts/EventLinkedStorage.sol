@@ -3,10 +3,10 @@
 pragma solidity ^0.8.20;
 
 /**
- * @title Storage
+ * @title EventLinkedStorage.sol
  * @notice Store and retrieve an unsigned integer value
  */
-contract Storage {
+contract EventLinkedStorage {
     /// @notice Emitted when a new value is stored.
     /// @param sender The address that triggered the update.
     /// @param val The value that was stored.
