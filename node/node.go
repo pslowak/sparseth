@@ -59,7 +59,7 @@ func (n *Node) Start(ctx context.Context) error {
 	ec := ethclient.NewClient(n.rpc)
 	sub := n.disp.Subscribe("transaction-monitor")
 	proc := state.NewTxProcessor(n.config.ChainConfig, n.db, ec, n.log)
-	mntr := monitor.NewMonitor("state", sub, proc, n.log)
+	mntr := monitor.NewMonitor("transaction", sub, proc, n.log)
 	g.Go(func() error {
 		if err := mntr.RunContext(ctx); err != nil {
 			n.log.Error("failed to start state-monitor", "err", err)
