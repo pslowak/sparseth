@@ -9,6 +9,7 @@ import (
 	"sparseth/execution/ethclient"
 	"sparseth/execution/monitor"
 	"sparseth/internal/log"
+	"sparseth/storage"
 )
 
 // LogProcessor downloads, verifies and
@@ -17,20 +18,21 @@ type LogProcessor struct {
 	log      log.Logger
 	acc      *monitor.AccountInfo
 	verifier *Verifier
-	db       *ethstore.EventStore
+	store    *ethstore.EventStore
 	provider *ethclient.Provider
 }
 
 // NewLogProcessor creates a new LogProcessor
 // for the specified account.
-func NewLogProcessor(acc *monitor.AccountInfo, rpc *ethclient.Client, store *ethstore.EventStore, log log.Logger) *LogProcessor {
+func NewLogProcessor(acc *monitor.AccountInfo, rpc *ethclient.Client, db storage.KeyValStore, log log.Logger) *LogProcessor {
+	store := ethstore.NewEventStore(db)
 	provider := ethclient.NewProvider(rpc)
 	verifier := NewLogVerifier(acc.ABI, acc.InitialHead)
 
 	return &LogProcessor{
 		log:      log.With("component", acc.Addr.Hex()+"-log-processor"),
 		acc:      acc,
-		db:       store,
+		store:    store,
 		provider: provider,
 		verifier: verifier,
 	}
@@ -55,7 +57,7 @@ func (p *LogProcessor) ProcessBlock(ctx context.Context, head *types.Header) err
 	}
 
 	p.log.Debug("store logs for block", "num", head.Number, "hash", head.Hash().Hex())
-	if err = p.db.PutAll(logs); err != nil {
+	if err = p.store.PutAll(logs); err != nil {
 		return fmt.Errorf("failed to store logs: %w", err)
 	}
 
