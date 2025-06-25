@@ -9,6 +9,6 @@ import (
 // values required to initialize and run the node.
 type Config struct {
 	ChainConfig *params.ChainConfig
-	AppConfig   *config.AppConfig
 	RpcURL      string
+	AccsConfig *config.AccountsConfig
 }

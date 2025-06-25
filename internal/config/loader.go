@@ -22,9 +22,9 @@ type account struct {
 	CountSlot string `yaml:"count_slot"`
 }
 
-// isEOA checks if the account is an
-// EOA or a contract account.
-func (a *account) isEOA() bool {
+// hasABI checks if the account has
+// an ABI file specified.
+func (a *account) hasABI() bool {
 	return a.ABI == ""
 }
 
@@ -46,7 +46,7 @@ func NewLoader(log log.Logger) *Loader {
 }
 
 // Load reads the config file at the specified path.
-func (l *Loader) Load(path string) (*AppConfig, error) {
+func (l *Loader) Load(path string) (*AccountsConfig, error) {
 	l.log.Info("load config from file", "path", path)
 
 	data, err := os.ReadFile(path)

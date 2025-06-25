@@ -22,7 +22,7 @@ func main() {
 	logger.Info("using config file", "path", *configPath)
 
 	loader := config.NewLoader(logger)
-	appConfig, err := loader.Load(*configPath)
+	accsConfig, err := loader.Load(*configPath)
 	if err != nil {
 		logger.Error("failed to load config", "err", err)
 		os.Exit(1)
@@ -33,7 +33,7 @@ func main() {
 
 	nodeConfig := &node.Config{
 		ChainConfig: config.AnvilChainConfig, // The only chain supported (for now)
-		AppConfig:   appConfig,
+		AccsConfig:  accsConfig,
 		RpcURL:      *rpcURL,
 	}
 

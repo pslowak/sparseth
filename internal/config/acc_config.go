@@ -5,10 +5,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// AppConfig contains the top-level config
-// structure for all Ethereum accounts to
-// be monitored.
-type AppConfig struct {
+// AccountsConfig contains the top-level
+// config structure for all Ethereum
+// accounts to be monitored.
+type AccountsConfig struct {
 	Accounts []*AccountConfig
 }
 

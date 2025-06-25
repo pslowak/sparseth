@@ -12,7 +12,7 @@ import (
 )
 
 // parser handles the conversion of raw config
-// data into structured AppConfig data.
+// data into structured AccountsConfig data.
 type parser struct {
 	log log.Logger
 }
@@ -26,8 +26,8 @@ func newParser(log log.Logger) *parser {
 }
 
 // parse parses the raw config data
-// into an AppConfig.
-func (p *parser) parse(raw *config) (*AppConfig, error) {
+// into an AccountsConfig.
+func (p *parser) parse(raw *config) (*AccountsConfig, error) {
 	var accounts []*AccountConfig
 	for _, unparsed := range raw.Accounts {
 		parsed, err := p.parseAccount(unparsed)
@@ -37,7 +37,7 @@ func (p *parser) parse(raw *config) (*AppConfig, error) {
 		accounts = append(accounts, parsed)
 	}
 
-	return &AppConfig{
+	return &AccountsConfig{
 		Accounts: accounts,
 	}, nil
 }
@@ -48,8 +48,8 @@ func (p *parser) parseAccount(acc *account) (*AccountConfig, error) {
 
 	addr := common.HexToAddress(acc.Address)
 
-	if acc.isEOA() {
-		p.log.Debug("account is EOA", "address", addr.Hex())
+	if acc.hasABI() {
+		p.log.Debug("ABI path detected", "address", addr.Hex())
 
 		// Externally Owned Accounts have no contract config
 		return &AccountConfig{
