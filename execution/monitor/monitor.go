@@ -19,9 +19,9 @@ type Monitor struct {
 
 // NewMonitor creates a new Monitor for the
 // specified Ethereum smart contract.
-func NewMonitor(acc string, ch <-chan *types.Header, processor Processor, log log.Logger) *Monitor {
+func NewMonitor(name string, ch <-chan *types.Header, processor Processor, log log.Logger) *Monitor {
 	return &Monitor{
-		log:       log.With("component", acc+"-monitor"),
+		log:       log.With("component", name+"-monitor"),
 		sub:       ch,
 		processor: processor,
 	}
