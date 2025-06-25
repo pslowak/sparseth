@@ -35,8 +35,9 @@ type ContractConfig struct {
 	CountSlot common.Hash
 }
 
-// IsContractAccount checks if the account
-// is an Ethereum contract account or an EOA.
-func (a *AccountConfig) IsContractAccount() bool {
+// HasContractConfig checks if the account
+// has a contract configuration, which is
+// necessary for event monitoring.
+func (a *AccountConfig) HasContractConfig() bool {
 	return a.ContractConfig != nil
 }
