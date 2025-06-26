@@ -48,16 +48,16 @@ func (p *parser) parseAccount(acc *account) (*AccountConfig, error) {
 
 	addr := common.HexToAddress(acc.Address)
 
-	if acc.hasABI() {
-		p.log.Debug("ABI path detected", "address", addr.Hex())
+	if !acc.hasABI() {
+		p.log.Debug("no ABI path detected", "address", addr.Hex())
 
-		// Externally Owned Accounts have no contract config
 		return &AccountConfig{
 			Addr:           addr,
 			ContractConfig: nil,
 		}, nil
 	}
 
+	p.log.Debug("parse ABI", "address", addr.Hex(), "path", acc.ABI)
 	contractABI, err := p.parseABI(acc.ABI)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse ABI: %w", err)

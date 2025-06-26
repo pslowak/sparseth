@@ -25,7 +25,7 @@ type account struct {
 // hasABI checks if the account has
 // an ABI file specified.
 func (a *account) hasABI() bool {
-	return a.ABI == ""
+	return a.ABI != ""
 }
 
 // Loader reads the main config file.

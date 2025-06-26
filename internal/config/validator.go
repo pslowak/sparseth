@@ -24,6 +24,7 @@ func newValidator(log log.Logger) *validator {
 // validate validates the raw config.
 func (v *validator) validate(raw *config) error {
 	for idx, acc := range raw.Accounts {
+		v.log.Debug("validate account", "address", acc.Address, "index", idx)
 		if err := v.validateAccount(acc); err != nil {
 			return fmt.Errorf("failed to validate account at index %d: %w", idx, err)
 		}
