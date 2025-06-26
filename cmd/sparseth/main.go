@@ -15,11 +15,13 @@ import (
 func main() {
 	rpcURL := flag.String("rpc", "ws://localhost:8545", "RPC provider URL to connect to")
 	configPath := flag.String("config", "config.yaml", "Path to config file")
+	eventModeFlag := flag.Bool("event-mode", false, "Enable event monitoring mode (default: false)")
 	flag.Parse()
 
 	logger := log.New(log.NewTerminalHandler()).With("component", "main")
 	logger.Info("using RPC provider", "url", *rpcURL)
 	logger.Info("using config file", "path", *configPath)
+	logger.Info("event mode", "enabled", *eventModeFlag)
 
 	loader := config.NewLoader(logger)
 	accsConfig, err := loader.Load(*configPath)
@@ -35,6 +37,7 @@ func main() {
 		ChainConfig: config.AnvilChainConfig, // The only chain supported (for now)
 		AccsConfig:  accsConfig,
 		RpcURL:      *rpcURL,
+		IsEventMode: *eventModeFlag,
 	}
 
 	n, err := node.NewNode(ctx, nodeConfig, logger)

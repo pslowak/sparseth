@@ -3,12 +3,16 @@ package node
 import (
 	"context"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rpc"
 	"golang.org/x/sync/errgroup"
+	"math/big"
 	"sparseth/execution"
 	"sparseth/execution/ethclient"
 	"sparseth/execution/monitor"
+	"sparseth/execution/monitor/event"
 	"sparseth/execution/monitor/state"
+	"sparseth/internal/config"
 	"sparseth/internal/log"
 	"sparseth/storage"
 	"sparseth/storage/mem"
@@ -54,37 +58,27 @@ func (n *Node) Start(ctx context.Context) error {
 
 	consensus, pipe := sync.NewMockClient(n.log, n.rpc, n.db)
 	listener := execution.NewListener(pipe, n.disp, n.log)
-
-	n.log.Info("start transaction monitor")
 	ec := ethclient.NewClient(n.rpc)
-	sub := n.disp.Subscribe("transaction-monitor")
-	proc := state.NewTxProcessor(n.config.ChainConfig, n.db, ec, n.log)
-	mntr := monitor.NewMonitor("transaction", sub, proc, n.log)
-	g.Go(func() error {
-		if err := mntr.RunContext(ctx); err != nil {
-			n.log.Error("failed to start state-monitor", "err", err)
-			return fmt.Errorf("failed to start state-monitor: %w", err)
-		}
-		return nil
-	})
 
-	n.log.Info("start consensus client")
-	g.Go(func() error {
-		if err := consensus.RunContext(ctx); err != nil {
-			n.log.Error("failed to start consensus client", "err", err)
-			return fmt.Errorf("failed to start consensus client: %w", err)
+	if n.config.IsEventMode {
+		// Start up a single log monitor for each contract account
+		for _, acc := range n.config.AccsConfig.Accounts {
+			if acc.HasContractConfig() {
+				n.log.Info("start event monitor", "account", acc.Addr.Hex())
+				g.Go(n.startEventMonitor(ctx, ec, acc))
+			}
 		}
-		return nil
-	})
+	} else {
+		// Start up a single transaction monitor for all accounts
+		n.log.Info("start transaction monitor")
+		g.Go(n.startTxMonitor(ctx, ec))
+	}
 
 	n.log.Info("start block listener")
-	g.Go(func() error {
-		if err := listener.RunContext(ctx); err != nil {
-			n.log.Error("failed to start block listener", "err", err)
-			return fmt.Errorf("failed to start block listener: %w", err)
-		}
-		return nil
-	})
+	g.Go(n.startBlockListener(ctx, listener))
+
+	n.log.Info("start consensus client")
+	g.Go(n.startConsensusClient(ctx, consensus))
 
 	if err := g.Wait(); err != nil {
 		n.log.Error("failed to start node", "err", err)
@@ -101,4 +95,66 @@ func (n *Node) Shutdown() {
 	n.rpc.Close()
 	n.disp.Close()
 	n.db.Close()
+}
+
+// startTxMonitor initializes and runs a transaction monitor.
+func (n *Node) startTxMonitor(ctx context.Context, ec *ethclient.Client) func() error {
+	return func() error {
+		sub := n.disp.Subscribe("transaction-monitor")
+		proc := state.NewTxProcessor(n.config.ChainConfig, n.db, ec, n.log)
+		mntr := monitor.NewMonitor("transaction", sub, proc, n.log)
+
+		if err := mntr.RunContext(ctx); err != nil {
+			n.log.Error("failed to start transaction-monitor", "err", err)
+			return fmt.Errorf("failed to start transaction-monitor: %w", err)
+		}
+
+		return nil
+	}
+}
+
+// startEventMonitor initializes and runs an event monitor
+// for a specific account.
+func (n *Node) startEventMonitor(ctx context.Context, ec *ethclient.Client, acc *config.AccountConfig) func() error {
+	return func() error {
+		info := &monitor.AccountInfo{
+			Addr:        acc.Addr,
+			ABI:         acc.ContractConfig.ABI,
+			Slot:        acc.ContractConfig.HeadSlot,
+			InitialHead: common.BigToHash(big.NewInt(0)),
+		}
+
+		sub := n.disp.Subscribe(acc.Addr.Hex())
+		proc := event.NewLogProcessor(info, ec, n.db, n.log)
+		mntr := monitor.NewMonitor(acc.Addr.Hex()+"-event", sub, proc, n.log)
+
+		if err := mntr.RunContext(ctx); err != nil {
+			n.log.Error("failed to start event-monitor", "err", err, "account", acc.Addr.Hex())
+			return fmt.Errorf("failed to start event-monitor for %s: %w", acc.Addr.Hex(), err)
+		}
+
+		return nil
+	}
+}
+
+// startBlockListener runs the block listener.
+func (n *Node) startBlockListener(ctx context.Context, l *execution.Listener) func() error {
+	return func() error {
+		if err := l.RunContext(ctx); err != nil {
+			n.log.Error("failed to start block listener", "err", err)
+			return fmt.Errorf("failed to start block listener: %w", err)
+		}
+		return nil
+	}
+}
+
+// startConsensusClient runs the consensus client.
+func (n *Node) startConsensusClient(ctx context.Context, c *sync.MockClient) func() error {
+	return func() error {
+		if err := c.RunContext(ctx); err != nil {
+			n.log.Error("failed to start block listener", "err", err)
+			return fmt.Errorf("failed to start block listener: %w", err)
+		}
+		return nil
+	}
 }

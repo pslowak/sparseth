@@ -9,7 +9,7 @@ SPARSETH is a lightweight sparse node protocol for Ethereum written in Go.
 Run the sparse node:
 
 ```bash
-sparseth --rpc "<ETHEREUM_RPC_URL>"
+sparseth --rpc <ETHEREUM_RPC_URL>
 ```
 
 ## Requirements
@@ -24,6 +24,23 @@ Once installed, you can build the node using:
 ```bash
 make all
 ```
+
+## Usage
+
+SPARSETH supports a variety of command-line options to configure its behavior:
+
+```bash
+sparseth [--rpc <url>] [--config <path>] [--event-mode]
+```
+
+### Options
+
+`--rpc <url>` URL of the Ethereum RPC endpoint to connect to (default: `ws://localhost:8545`).
+
+`--config <path>` Path to the configuration file defining all monitored accounts (default: `config.yaml`).
+
+`--event-mode` Enables _event mode_. If omitted, the node operates in _sparse mode_.
+
 
 ## Node Modes
 
