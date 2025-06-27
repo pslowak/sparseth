@@ -49,11 +49,20 @@ func (v *validator) validateAccount(acc *account) error {
 	}
 
 	if acc.HeadSlot != "" {
-		head := strings.TrimPrefix(acc.HeadSlot, "0x")
-		if _, err := strconv.ParseUint(head, 10, 64); err != nil {
+		if err := isValidHexUint(acc.HeadSlot); err != nil {
 			return fmt.Errorf("invalid head slot: %w", err)
 		}
 	}
 
+	return nil
+}
+
+// isValidHexUint checks if the given string
+// represents a valid hexadecimal unsigned integer.
+func isValidHexUint(s string) error {
+	trimmed := strings.TrimPrefix(s, "0x")
+	if _, err := strconv.ParseUint(trimmed, 16, 64); err != nil {
+		return fmt.Errorf("invalid hex number: %s", s)
+	}
 	return nil
 }
