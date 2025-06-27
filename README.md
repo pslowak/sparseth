@@ -72,22 +72,16 @@ re-executing transactions that affect the monitored accounts.
 
 ## Configuration
 
-SPARSETH uses a `config.yaml` file to define monitored accounts.
+SPARSETH uses a `config.yaml` file to define monitored accounts. For a quick overview, see the example below.
 
 ### Example Configuration
 
 ```yaml
 accounts:
-  - address: "0x0000000000000000000000000000000000000000" # required
+  - address: "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef" # required
     abi_path: "path/to/abi" # required (event mode)
     head_slot: "0x0" # optional
     storage_path: "path/to/storage/layout" # optional
 ```
 
-### Slot Resolution Priority
-
-When determining the storage slot for the hash chain head, SPARSETH follows this order:
-
-1. `head_slot` – Explicitly defined storage slot (e.g., `0x0`).
-2. `storage_path` – Auto-detects a `bytes32` variable named `head`in the storage layout.
-3. Default – Falls back to storage slot `0x0`.
+> For detailed configuration options, refer to the [Configuration Guide](https://github.com/pslowak/sparseth/wiki/Configuration-Guide).
