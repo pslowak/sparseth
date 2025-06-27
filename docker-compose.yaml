@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  sparseth:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./config.yaml:/app/config.yaml
+      - ./build:/app/build
+    environment:
+      - EXECUTION_RPC_URL=ws://host.docker.internal:8545
+      - CONFIG_PATH=/app/config.yaml
+#      - EVENT_MODE=true # Uncomment to enable event mode

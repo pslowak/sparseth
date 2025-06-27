@@ -25,6 +25,12 @@ Once installed, you can build the node using:
 make all
 ```
 
+If you prefer using Docker, you can build and run the node with:
+
+```bash
+docker compose up
+```
+
 ## Usage
 
 SPARSETH supports a variety of command-line options to configure its behavior:

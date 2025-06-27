@@ -16,6 +16,17 @@ func main() {
 	rpcURL := flag.String("rpc", "ws://localhost:8545", "RPC provider URL to connect to")
 	configPath := flag.String("config", "config.yaml", "Path to config file")
 	eventModeFlag := flag.Bool("event-mode", false, "Enable event monitoring mode (default: false)")
+
+	if v := os.Getenv("EXECUTION_RPC_URL"); v != "" {
+		flag.Set("rpc", v)
+	}
+	if v := os.Getenv("CONFIG_PATH"); v != "" {
+		flag.Set("config", v)
+	}
+	if v := os.Getenv("EVENT_MODE"); v == "1" || v == "true" {
+		flag.Set("event-mode", "true")
+	}
+
 	flag.Parse()
 
 	logger := log.New(log.NewTerminalHandler()).With("component", "main")
