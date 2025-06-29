@@ -35,22 +35,31 @@ func (v *validator) validate(raw *config) error {
 // validateAccount validates a single account config.
 func (v *validator) validateAccount(acc *account) error {
 	if acc.Address == "" {
+		v.log.Error("address must not be empty")
 		return fmt.Errorf("address is empty")
 	}
 
 	if !common.IsHexAddress(acc.Address) {
+		v.log.Error("address must be a valid hex address", "address", acc.Address)
 		return fmt.Errorf("invalid address: %s", acc.Address)
-	}
-
-	if acc.ABI == "" {
-		if acc.Storage != "" || acc.HeadSlot != "" || acc.CountSlot != "" {
-			return fmt.Errorf("ABI must be specified for contract accounts")
-		}
 	}
 
 	if acc.HeadSlot != "" {
 		if err := isValidHexUint(acc.HeadSlot); err != nil {
+			v.log.Error("head slot must be a valid hex uint", "headSlot", acc.HeadSlot)
 			return fmt.Errorf("invalid head slot: %w", err)
+		}
+	}
+
+	if (acc.ABI == empty && acc.HeadSlot != empty) || (acc.ABI != empty && acc.HeadSlot == empty) {
+		v.log.Error("both ABI and head slot must be specified for event monitoring")
+		return fmt.Errorf("invalid event config for account %s: both ABI and head slot must be specified", acc.Address)
+	}
+
+	if acc.CountSlot != "" {
+		if err := isValidHexUint(acc.CountSlot); err != nil {
+			v.log.Error("count slot must be a valid hex uint", "countSlot", acc.CountSlot)
+			return fmt.Errorf("invalid count slot: %w", err)
 		}
 	}
 

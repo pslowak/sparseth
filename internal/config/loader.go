@@ -17,15 +17,8 @@ type config struct {
 type account struct {
 	Address   string `yaml:"address"`
 	ABI       string `yaml:"abi_path"`
-	Storage   string `yaml:"storage_path"`
 	HeadSlot  string `yaml:"head_slot"`
 	CountSlot string `yaml:"count_slot"`
-}
-
-// hasABI checks if the account has
-// an ABI file specified.
-func (a *account) hasABI() bool {
-	return a.ABI != ""
 }
 
 // Loader reads the main config file.

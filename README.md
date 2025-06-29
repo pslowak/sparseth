@@ -54,6 +54,9 @@ SPARSETH supports two modes of operation:
 - _Event mode_ – monitors events emitted by Ethereum smart contracts
 - _Sparse mode_ – monitors the state of Ethereum accounts
 
+> See the [Smart Contract Compatibility Guide](https://github.com/pslowak/sparseth/wiki/Smart-Contract-Compatibility-Guide)
+to learn how to make your smart contract compatible with SPARSETH's execution modes.
+ 
 ### Event Mode
 
 In event mode, the node listens for events emitted specific smart contracts. To make these events verifiable, each
@@ -67,14 +70,22 @@ contents of the current event. The latest hash chain head is stored within the c
 node computes the new hash chain head and compares it with the one stored in the contract, thereby ensuring that the
 received events are not tampered with (integrity) or selectively omitted (completeness).
 
-> See the [Smart Contract Compatibility Guide](https://github.com/pslowak/sparseth/wiki/Smart-Contract-Compatibility-Guide) 
-to learn how to make your smart contract compatible with SPARSETH's event mode.
-
 ### Sparse Mode
 
 In sparse mode, the node monitors the state of specific Ethereum accounts by maintaining a _sparse state_ (a minimal
 subset of the global state that is relevant only to the monitored accounts). The node reconstructs this partial state by 
 re-executing transactions that affect the monitored accounts. 
+
+Monitoring contract accounts in sparse mode introduces the challenge of _transaction completeness_: ensuring that all
+transactions affecting the contract's state have been received and processed by the node. To address this, the node 
+requires each monitored contract to maintain a monotonic integer counter, which is incremented on every state-changing 
+function call. By comparing the current value of the counter on-chain with the value of the counter reconstructed 
+through local re-execution, the node can verify transaction completeness.
+
+> Note: This approach would be most effective with support for transaction inclusion proofs. With such proofs, the node
+could avoid downloading all transactions in a block and reconstructing the entire transaction trie. Instead, it could
+fetch only the relevant transactions and verify their inclusion. However, such proofs are currently not available via 
+the standard Ethereum RPC API.
 
 ## Configuration
 
@@ -85,9 +96,9 @@ SPARSETH uses a `config.yaml` file to define monitored accounts. For a quick ove
 ```yaml
 accounts:
   - address: "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef" # required
-    abi_path: "path/to/abi" # required (event mode)
-    head_slot: "0x0" # optional
-    storage_path: "path/to/storage/layout" # optional
+    abi_path: "path/to/abi" # required in event mode
+    head_slot: "0x0" # required in event mode
+    count_slot: "0x1" # required in sparse mode for contract monitoring
 ```
 
 > For detailed configuration options, refer to the [Configuration Guide](https://github.com/pslowak/sparseth/wiki/Configuration-Guide).

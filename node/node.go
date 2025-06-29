@@ -63,7 +63,7 @@ func (n *Node) Start(ctx context.Context) error {
 	if n.config.IsEventMode {
 		// Start up a single log monitor for each contract account
 		for _, acc := range n.config.AccsConfig.Accounts {
-			if acc.HasContractConfig() {
+			if acc.ContractConfig.HasEventConfig() {
 				n.log.Info("start event monitor", "account", acc.Addr.Hex())
 				g.Go(n.startEventMonitor(ctx, ec, acc))
 			}
@@ -119,8 +119,8 @@ func (n *Node) startEventMonitor(ctx context.Context, ec *ethclient.Client, acc 
 	return func() error {
 		info := &monitor.AccountInfo{
 			Addr:        acc.Addr,
-			ABI:         acc.ContractConfig.ABI,
-			Slot:        acc.ContractConfig.HeadSlot,
+			ABI:         acc.ContractConfig.Event.ABI,
+			Slot:        acc.ContractConfig.Event.HeadSlot,
 			InitialHead: common.BigToHash(big.NewInt(0)),
 		}
 

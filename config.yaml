@@ -1,5 +1,5 @@
 accounts:
-  - address: "0x0000000000000000000000000000000000000000" # Required
-    abi_path: "build/EventLinkedStorage.abi" # Required
-    storage_path: "build/EventLinkedStorage_storage.json" # Optional
-    head_slot: "0x0" # Optional (default 0)
+  - address: "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef" # Required
+    abi_path: "build/EventLinkedStorage.abi" # Required in event mode
+    head_slot: "0x0" # Required in event mode
+    count_slot: "0x1" # Required in sparse mode for contract monitoring

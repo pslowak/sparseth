@@ -9,7 +9,7 @@ CONTRACTS_DIR = ./contracts
 all: build
 
 build:
-	solc --abi --storage-layout --overwrite -o $(BUILD_DIR) $(CONTRACTS_DIR)/*.sol
+	solc --abi --overwrite -o $(BUILD_DIR) $(CONTRACTS_DIR)/*.sol
 	go build -o $(BUILD_DIR)/bin/$(APP_NAME) $(MAIN_PKG)
 test:
 	go test ./... -v
