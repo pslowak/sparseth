@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"sparseth/ethstore"
 	"sparseth/execution/ethclient"
+	"sparseth/internal/config"
 	"sparseth/internal/log"
 	"sparseth/storage"
 )
@@ -23,20 +24,25 @@ type TxProcessor struct {
 	provider *ethclient.Provider
 	executor *TxExecutor
 	preparer *Preparer
+	verifier *Verifier
+	accounts *config.AccountsConfig
 	log      log.Logger
 }
 
 // NewTxProcessor creates a new TxProcessor.
-func NewTxProcessor(cc *params.ChainConfig, db storage.KeyValStore, rpc *ethclient.Client, log log.Logger) *TxProcessor {
+func NewTxProcessor(accs *config.AccountsConfig, cc *params.ChainConfig, db storage.KeyValStore, rpc *ethclient.Client, log log.Logger) *TxProcessor {
 	provider := ethclient.NewProvider(rpc)
 	store := ethstore.NewHeaderStore(db)
 	preparer := NewPreparer(provider, store, cc)
+	verifier := NewVerifier(provider, log)
 	executor := NewTxExecutor(cc)
 
 	return &TxProcessor{
 		provider: provider,
 		executor: executor,
 		preparer: preparer,
+		verifier: verifier,
+		accounts: accs,
 		log:      log.With("component", "transaction-processor"),
 	}
 }
@@ -56,7 +62,6 @@ func (p *TxProcessor) ProcessBlock(ctx context.Context, head *types.Header) erro
 	}
 
 	p.log.Debug("state before execution: "+string(world.Dump(nil)), "num", head.Number, "hash", head.Hash().Hex())
-
 	_, err = p.executor.ExecuteTxs(head, txs, world)
 	if err != nil {
 		return fmt.Errorf("failed to execute txs for block %d: %w", head.Number.Uint64(), err)
@@ -71,7 +76,14 @@ func (p *TxProcessor) ProcessBlock(ctx context.Context, head *types.Header) erro
 	if err != nil {
 		return fmt.Errorf("failed to create new state for block %d: %w", head.Number.Uint64(), err)
 	}
-
 	p.log.Debug("state after execution: "+string(newWorld.Dump(nil)), "num", head.Number, "hash", head.Hash().Hex())
+
+	for _, acc := range p.accounts.Accounts {
+		if err = p.verifier.VerifyCompleteness(ctx, acc, head, newWorld); err != nil {
+			p.log.Warn("failed to verify state for account", "account", acc.Addr.Hex(), "num", head.Number, "hash", head.Hash().Hex(), "error", err)
+			return fmt.Errorf("failed to verify state for account %s at block %d: %w", acc.Addr.Hex(), head.Number.Uint64(), err)
+		}
+	}
+
 	return nil
 }

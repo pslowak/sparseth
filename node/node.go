@@ -101,7 +101,7 @@ func (n *Node) Shutdown() {
 func (n *Node) startTxMonitor(ctx context.Context, ec *ethclient.Client) func() error {
 	return func() error {
 		sub := n.disp.Subscribe("transaction-monitor")
-		proc := state.NewTxProcessor(n.config.ChainConfig, n.db, ec, n.log)
+		proc := state.NewTxProcessor(n.config.AccsConfig, n.config.ChainConfig, n.db, ec, n.log)
 		mntr := monitor.NewMonitor("transaction", sub, proc, n.log)
 
 		if err := mntr.RunContext(ctx); err != nil {
