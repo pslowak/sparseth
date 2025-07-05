@@ -29,7 +29,7 @@ type transactionWithContext struct {
 // the partial world state just before
 // the execution of a block.
 type Preparer struct {
-	provider *ethclient.Provider
+	provider ethclient.Provider
 	store    *ethstore.HeaderStore
 	cc       *params.ChainConfig
 }
@@ -37,7 +37,7 @@ type Preparer struct {
 // NewPreparer creates a new Preparer with the
 // specified provider and chain configuration,
 // reading headers from the specified store.
-func NewPreparer(provider *ethclient.Provider, store *ethstore.HeaderStore, cc *params.ChainConfig) *Preparer {
+func NewPreparer(provider ethclient.Provider, store *ethstore.HeaderStore, cc *params.ChainConfig) *Preparer {
 	return &Preparer{
 		provider: provider,
 		store:    store,

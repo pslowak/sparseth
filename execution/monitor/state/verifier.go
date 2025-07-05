@@ -15,12 +15,12 @@ import (
 // Verifier is responsible for verifying the
 // completeness of the state of monitored accounts.
 type Verifier struct {
-	provider *ethclient.Provider
+	provider ethclient.Provider
 	log      log.Logger
 }
 
 // NewVerifier creates a new Verifier instance.
-func NewVerifier(provider *ethclient.Provider, log log.Logger) *Verifier {
+func NewVerifier(provider ethclient.Provider, log log.Logger) *Verifier {
 	return &Verifier{
 		provider: provider,
 		log:      log.With("component", "state-verifier"),

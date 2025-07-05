@@ -21,7 +21,7 @@ import (
 // of TxProcessor is used for all monitored
 // accounts.
 type TxProcessor struct {
-	provider *ethclient.Provider
+	provider ethclient.Provider
 	executor *TxExecutor
 	preparer *Preparer
 	verifier *Verifier
@@ -31,7 +31,7 @@ type TxProcessor struct {
 
 // NewTxProcessor creates a new TxProcessor.
 func NewTxProcessor(accs *config.AccountsConfig, cc *params.ChainConfig, db storage.KeyValStore, rpc *ethclient.Client, log log.Logger) *TxProcessor {
-	provider := ethclient.NewProvider(rpc)
+	provider := ethclient.NewRpcProvider(rpc)
 	store := ethstore.NewHeaderStore(db)
 	preparer := NewPreparer(provider, store, cc)
 	verifier := NewVerifier(provider, log)

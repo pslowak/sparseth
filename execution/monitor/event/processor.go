@@ -19,14 +19,14 @@ type LogProcessor struct {
 	acc      *monitor.AccountInfo
 	verifier *Verifier
 	store    *ethstore.EventStore
-	provider *ethclient.Provider
+	provider ethclient.Provider
 }
 
 // NewLogProcessor creates a new LogProcessor
 // for the specified account.
 func NewLogProcessor(acc *monitor.AccountInfo, rpc *ethclient.Client, db storage.KeyValStore, log log.Logger) *LogProcessor {
 	store := ethstore.NewEventStore(db)
-	provider := ethclient.NewProvider(rpc)
+	provider := ethclient.NewRpcProvider(rpc)
 	verifier := NewLogVerifier(acc.ABI, acc.InitialHead)
 
 	return &LogProcessor{
