@@ -62,7 +62,7 @@ func (v *Verifier) VerifyCompleteness(ctx context.Context, acc *config.AccountCo
 		}
 
 		actual := world.GetState(acc.Addr, acc.ContractConfig.State.CountSlot)
-		if bytes.Equal(counter, actual.Bytes()) {
+		if !bytes.Equal(counter, actual.Bytes()) {
 			v.logWithContext("interaction counter mismatch", expected, header)
 			return fmt.Errorf("interaction counter mismatch: expected: %s, got: %s", common.Bytes2Hex(counter), actual.Hex())
 		}
