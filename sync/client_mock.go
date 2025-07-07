@@ -8,7 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 	"math/big"
 	"sparseth/ethstore"
-	"sparseth/internal/log"
+	"sparseth/log"
 	"sparseth/storage"
 )
 

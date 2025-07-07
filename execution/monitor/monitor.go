@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/ethereum/go-ethereum/core/types"
-	"sparseth/internal/log"
+	"sparseth/log"
 )
 
 type Monitor struct {

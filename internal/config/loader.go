@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"gopkg.in/yaml.v3"
 	"os"
-	"sparseth/internal/log"
+	"sparseth/log"
 )
 
 // config represents the raw YAML structure

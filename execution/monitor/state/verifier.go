@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"sparseth/execution/ethclient"
 	"sparseth/internal/config"
-	"sparseth/internal/log"
+	"sparseth/log"
 )
 
 // Verifier is responsible for verifying the

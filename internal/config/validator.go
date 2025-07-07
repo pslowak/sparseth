@@ -3,7 +3,7 @@ package config
 import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
-	"sparseth/internal/log"
+	"sparseth/log"
 	"strconv"
 	"strings"
 )

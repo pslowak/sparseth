@@ -9,7 +9,7 @@ import (
 	"sparseth/ethstore"
 	"sparseth/execution/ethclient"
 	"sparseth/internal/config"
-	"sparseth/internal/log"
+	"sparseth/log"
 	"sparseth/storage"
 )
 

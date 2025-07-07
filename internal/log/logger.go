@@ -1,28 +1,9 @@
 package log
 
-import "log/slog"
-
-type Logger interface {
-	// With returns a logger that includes the
-	// given attributes in each output operation
-	With(ctx ...any) Logger
-
-	// Debug logs a message at the debug level
-	// with context key/value pairs.
-	Debug(msg string, ctx ...any)
-
-	// Info logs a message at the info level
-	// with context key/value pairs.
-	Info(msg string, ctx ...any)
-
-	// Warn logs a message at the warn level
-	// with context key/value pairs.
-	Warn(msg string, ctx ...any)
-
-	// Error logs a message at the error level
-	// with context key/value pairs.
-	Error(msg string, ctx ...any)
-}
+import (
+	"log/slog"
+	"sparseth/log"
+)
 
 type logger struct {
 	inner *slog.Logger
@@ -30,7 +11,7 @@ type logger struct {
 
 // New returns a new logger with the
 // specified handler set.
-func New(handler slog.Handler) Logger {
+func New(handler slog.Handler) log.Logger {
 	return &logger{
 		inner: slog.New(handler),
 	}
@@ -38,7 +19,7 @@ func New(handler slog.Handler) Logger {
 
 // With returns a Logger that includes the
 // given attributes in each output operation.
-func (l *logger) With(ctx ...any) Logger {
+func (l *logger) With(ctx ...any) log.Logger {
 	return &logger{l.inner.With(ctx...)}
 }
 

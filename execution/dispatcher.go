@@ -2,7 +2,7 @@ package execution
 
 import (
 	"github.com/ethereum/go-ethereum/core/types"
-	"sparseth/internal/log"
+	"sparseth/log"
 	"sync"
 )
 

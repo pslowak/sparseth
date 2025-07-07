@@ -13,7 +13,7 @@ import (
 	"sparseth/execution/monitor/event"
 	"sparseth/execution/monitor/state"
 	"sparseth/internal/config"
-	"sparseth/internal/log"
+	"sparseth/log"
 	"sparseth/storage"
 	"sparseth/storage/mem"
 	"sparseth/sync"

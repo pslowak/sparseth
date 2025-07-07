@@ -3,7 +3,7 @@ package execution
 import (
 	"context"
 	"github.com/ethereum/go-ethereum/core/types"
-	"sparseth/internal/log"
+	"sparseth/log"
 )
 
 // Listener subscribes to new block headers
