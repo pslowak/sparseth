@@ -49,19 +49,19 @@ func NewTxProcessor(accs *config.AccountsConfig, cc *params.ChainConfig, db stor
 
 // ProcessBlock processes the specified block header.
 func (p *TxProcessor) ProcessBlock(ctx context.Context, head *types.Header) error {
-	p.log.Debug("download txs for block", "num", head.Number, "hash", head.Hash().Hex())
+	p.logWithContext("download txs for block", head)
 	txs, err := p.provider.GetTxsAtBlock(ctx, head)
 	if err != nil {
 		return fmt.Errorf("failed to get txs at block %d: %w", head.Number.Uint64(), err)
 	}
 
-	p.log.Debug("prepare state for block", "num", head.Number, "hash", head.Hash().Hex())
+	p.logWithContext("prepare state for block", head)
 	world, err := p.preparer.LoadState(ctx, head, txs)
 	if err != nil {
 		return fmt.Errorf("failed to load state for block %d: %w", head.Number.Uint64(), err)
 	}
 
-	p.log.Debug("state before execution: "+string(world.Dump(nil)), "num", head.Number, "hash", head.Hash().Hex())
+	p.logWithContext("state before execution "+string(world.Dump(nil)), head)
 	_, err = p.executor.ExecuteTxs(head, txs, world)
 	if err != nil {
 		return fmt.Errorf("failed to execute txs for block %d: %w", head.Number.Uint64(), err)
@@ -76,7 +76,7 @@ func (p *TxProcessor) ProcessBlock(ctx context.Context, head *types.Header) erro
 	if err != nil {
 		return fmt.Errorf("failed to create new state for block %d: %w", head.Number.Uint64(), err)
 	}
-	p.log.Debug("state after execution: "+string(newWorld.Dump(nil)), "num", head.Number, "hash", head.Hash().Hex())
+	p.logWithContext("state after execution "+string(newWorld.Dump(nil)), head)
 
 	for _, acc := range p.accounts.Accounts {
 		if err = p.verifier.VerifyCompleteness(ctx, acc, head, newWorld); err != nil {
@@ -86,4 +86,10 @@ func (p *TxProcessor) ProcessBlock(ctx context.Context, head *types.Header) erro
 	}
 
 	return nil
+}
+
+// logWithContext logs a message with
+// block context at debug level.
+func (p *TxProcessor) logWithContext(msg string, header *types.Header) {
+	p.log.Debug(msg, "num", header.Number, "hash", header.Hash().Hex())
 }
