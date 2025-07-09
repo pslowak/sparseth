@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/triedb"
 	"github.com/holiman/uint256"
 	"log/slog"
@@ -20,6 +21,12 @@ import (
 )
 
 type VerifierTestProvider struct {
+	// account to be retuned by GetAccountAtBlock
+	acc *ethclient.Account
+	// storage slot to be returned by GetStorageAtBlock
+	storage []byte
+	// error to be returned by provider methods
+	err error
 }
 
 func (t VerifierTestProvider) GetTxsAtBlock(ctx context.Context, header *types.Header) ([]*ethclient.TransactionWithIndex, error) {
@@ -31,47 +38,11 @@ func (t VerifierTestProvider) GetLogsAtBlock(ctx context.Context, acc common.Add
 }
 
 func (t VerifierTestProvider) GetAccountAtBlock(ctx context.Context, acc common.Address, head *types.Header) (*ethclient.Account, error) {
-	if acc == common.HexToAddress("0x0000000000000000000000000000000000000001") {
-		return nil, nil
-	}
-	if acc == common.HexToAddress("0x0000000000000000000000000000000000002") {
-		return &ethclient.Account{
-			Address:     acc,
-			Nonce:       0,
-			Balance:     big.NewInt(0),
-			CodeHash:    types.EmptyCodeHash,
-			StorageRoot: types.EmptyRootHash,
-		}, nil
-	}
-	if acc == common.HexToAddress("0x0000000000000000000000000000000000003") {
-		return &ethclient.Account{
-			Address:     acc,
-			Nonce:       1,
-			Balance:     big.NewInt(0),
-			CodeHash:    common.HexToHash("0xf1885eda54b7a053318cd41e2093220dab15d65381b1157a3633a83bfd5c9239"),
-			StorageRoot: common.HexToHash("0xf38f9f63c760d088d7dd04f743619b6291f63beebd8bdf530628f90e9cfa52d7"),
-		}, nil
-	}
-	if acc == common.HexToAddress("0x0000000000000000000000000000000000004") {
-		return &ethclient.Account{
-			Address:     acc,
-			Nonce:       1,
-			Balance:     big.NewInt(0),
-			CodeHash:    common.HexToHash("0xf1885eda54b7a053318cd41e2093220dab15d65381b1157a3633a83bfd5c9239"),
-			StorageRoot: common.HexToHash("0xf38f9f63c760d088d7dd04f743619b6291f63beebd8bdf530628f90e9cfa52d7"),
-		}, nil
-	}
-	return nil, fmt.Errorf("failed to retrieve account")
+	return t.acc, t.err
 }
 
 func (t VerifierTestProvider) GetStorageAtBlock(ctx context.Context, acc common.Address, slot common.Hash, head *types.Header) ([]byte, error) {
-	if acc == common.HexToAddress("0x0000000000000000000000000000000000003") {
-		return common.BigToHash(big.NewInt(2)).Bytes(), nil
-	}
-	if acc == common.HexToAddress("0x0000000000000000000000000000000000004") {
-		return common.BigToHash(big.NewInt(1)).Bytes(), nil
-	}
-	return nil, nil
+	return t.storage, t.err
 }
 
 func (t VerifierTestProvider) GetCodeAtBlock(ctx context.Context, acc common.Address, head *types.Header) ([]byte, error) {
@@ -84,7 +55,11 @@ func (t VerifierTestProvider) CreateAccessList(ctx context.Context, tx *ethclien
 
 func TestVerifier_VerifyCompleteness(t *testing.T) {
 	t.Run("should return error when account cannot be retrieved", func(t *testing.T) {
-		v := NewVerifier(VerifierTestProvider{}, log.New(slog.DiscardHandler))
+		p := VerifierTestProvider{
+			acc: nil,
+			err: fmt.Errorf("failed to retrieve account"),
+		}
+		v := NewVerifier(p, log.New(slog.DiscardHandler))
 
 		acc := &config.AccountConfig{
 			Addr: common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"),
@@ -110,7 +85,7 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 		v := NewVerifier(VerifierTestProvider{}, log.New(slog.DiscardHandler))
 
 		acc := &config.AccountConfig{
-			Addr: common.HexToAddress("0x0000000000000000000000000000000000000001"),
+			Addr: common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"),
 		}
 		head := &types.Header{
 			Number: big.NewInt(1),
@@ -129,11 +104,16 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 		}
 	})
 
-	t.Run("should return error if account doe not exist not in world state", func(t *testing.T) {
-		v := NewVerifier(VerifierTestProvider{}, log.New(slog.DiscardHandler))
+	t.Run("should return error if account does not exist not in world state", func(t *testing.T) {
+		p := VerifierTestProvider{
+			acc: &ethclient.Account{
+				Address: common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"),
+			},
+		}
+		v := NewVerifier(p, log.New(slog.DiscardHandler))
 
 		acc := &config.AccountConfig{
-			Addr: common.HexToAddress("0x0000000000000000000000000000000000000002"),
+			Addr: p.acc.Address,
 		}
 		head := &types.Header{
 			Number: big.NewInt(1),
@@ -153,10 +133,16 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 	})
 
 	t.Run("should return error if nonce mismatch", func(t *testing.T) {
-		v := NewVerifier(VerifierTestProvider{}, log.New(slog.DiscardHandler))
+		p := VerifierTestProvider{
+			acc: &ethclient.Account{
+				Address: common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"),
+				Nonce:   2,
+			},
+		}
+		v := NewVerifier(p, log.New(slog.DiscardHandler))
 
 		acc := &config.AccountConfig{
-			Addr: common.HexToAddress("0x0000000000000000000000000000000000000002"),
+			Addr: p.acc.Address,
 		}
 		head := &types.Header{
 			Number: big.NewInt(1),
@@ -169,7 +155,7 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 			t.Fatalf("failed to create new state: %v", err)
 		}
 		old.CreateAccount(acc.Addr)
-		old.SetNonce(acc.Addr, 1, tracing.NonceChangeUnspecified)
+		old.SetNonce(acc.Addr, p.acc.Nonce-1, tracing.NonceChangeUnspecified)
 		root, err := old.Commit(head.Number.Uint64(), false, false)
 		if err != nil {
 			t.Fatalf("failed to commit state: %v", err)
@@ -187,10 +173,17 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 	})
 
 	t.Run("should return error if balance mismatch", func(t *testing.T) {
-		v := NewVerifier(VerifierTestProvider{}, log.New(slog.DiscardHandler))
+		p := VerifierTestProvider{
+			acc: &ethclient.Account{
+				Address: common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"),
+				Nonce:   1,
+				Balance: big.NewInt(1000),
+			},
+		}
+		v := NewVerifier(p, log.New(slog.DiscardHandler))
 
 		acc := &config.AccountConfig{
-			Addr: common.HexToAddress("0x0000000000000000000000000000000000000002"),
+			Addr: p.acc.Address,
 		}
 		head := &types.Header{
 			Number: big.NewInt(1),
@@ -203,8 +196,8 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 			t.Fatalf("failed to create new state: %v", err)
 		}
 		old.CreateAccount(acc.Addr)
-		old.SetNonce(acc.Addr, 0, tracing.NonceChangeUnspecified)
-		old.SetBalance(acc.Addr, uint256.MustFromBig(big.NewInt(1)), tracing.BalanceChangeUnspecified)
+		old.SetNonce(acc.Addr, p.acc.Nonce, tracing.NonceChangeUnspecified)
+		old.SetBalance(acc.Addr, uint256.MustFromBig(big.NewInt(10)), tracing.BalanceChangeUnspecified)
 		root, err := old.Commit(head.Number.Uint64(), false, false)
 		if err != nil {
 			t.Fatalf("failed to commit state: %v", err)
@@ -222,10 +215,18 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 	})
 
 	t.Run("should return error if code hash mismatch", func(t *testing.T) {
-		v := NewVerifier(VerifierTestProvider{}, log.New(slog.DiscardHandler))
+		p := VerifierTestProvider{
+			acc: &ethclient.Account{
+				Address:  common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"),
+				Nonce:    1,
+				Balance:  big.NewInt(1000),
+				CodeHash: common.HexToHash("0xdeadbeef"),
+			},
+		}
+		v := NewVerifier(p, log.New(slog.DiscardHandler))
 
 		acc := &config.AccountConfig{
-			Addr: common.HexToAddress("0x0000000000000000000000000000000000000002"),
+			Addr: p.acc.Address,
 		}
 		head := &types.Header{
 			Number: big.NewInt(1),
@@ -238,8 +239,8 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 			t.Fatalf("failed to create new state: %v", err)
 		}
 		old.CreateAccount(acc.Addr)
-		old.SetNonce(acc.Addr, 0, tracing.NonceChangeUnspecified)
-		old.SetBalance(acc.Addr, uint256.MustFromBig(big.NewInt(0)), tracing.BalanceChangeUnspecified)
+		old.SetNonce(acc.Addr, p.acc.Nonce, tracing.NonceChangeUnspecified)
+		old.SetBalance(acc.Addr, uint256.MustFromBig(p.acc.Balance), tracing.BalanceChangeUnspecified)
 		old.SetCode(acc.Addr, []byte{0x01})
 
 		root, err := old.Commit(head.Number.Uint64(), false, false)
@@ -259,10 +260,19 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 	})
 
 	t.Run("should return error if storage root mismatch", func(t *testing.T) {
-		v := NewVerifier(VerifierTestProvider{}, log.New(slog.DiscardHandler))
+		p := VerifierTestProvider{
+			acc: &ethclient.Account{
+				Address:     common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"),
+				Nonce:       1,
+				Balance:     big.NewInt(1000),
+				CodeHash:    types.EmptyCodeHash,
+				StorageRoot: common.HexToHash("0xdeadbeef"),
+			},
+		}
+		v := NewVerifier(p, log.New(slog.DiscardHandler))
 
 		acc := &config.AccountConfig{
-			Addr: common.HexToAddress("0x0000000000000000000000000000000000000002"),
+			Addr: p.acc.Address,
 		}
 		head := &types.Header{
 			Number: big.NewInt(1),
@@ -275,8 +285,8 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 			t.Fatalf("failed to create new state: %v", err)
 		}
 		old.CreateAccount(acc.Addr)
-		old.SetNonce(acc.Addr, 0, tracing.NonceChangeUnspecified)
-		old.SetBalance(acc.Addr, uint256.MustFromBig(big.NewInt(0)), tracing.BalanceChangeUnspecified)
+		old.SetNonce(acc.Addr, p.acc.Nonce, tracing.NonceChangeUnspecified)
+		old.SetBalance(acc.Addr, uint256.MustFromBig(p.acc.Balance), tracing.BalanceChangeUnspecified)
 		old.SetCode(acc.Addr, []byte{})
 		old.SetState(acc.Addr, common.BigToHash(big.NewInt(1)), common.BigToHash(big.NewInt(2)))
 
@@ -297,10 +307,19 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 	})
 
 	t.Run("should succeed if valid EOA", func(t *testing.T) {
-		v := NewVerifier(VerifierTestProvider{}, log.New(slog.DiscardHandler))
+		p := VerifierTestProvider{
+			acc: &ethclient.Account{
+				Address:     common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"),
+				Nonce:       1,
+				Balance:     big.NewInt(1000),
+				CodeHash:    types.EmptyCodeHash,
+				StorageRoot: types.EmptyRootHash,
+			},
+		}
+		v := NewVerifier(p, log.New(slog.DiscardHandler))
 
 		acc := &config.AccountConfig{
-			Addr:           common.HexToAddress("0x0000000000000000000000000000000000000002"),
+			Addr:           p.acc.Address,
 			ContractConfig: &config.ContractConfig{},
 		}
 		head := &types.Header{
@@ -314,8 +333,8 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 			t.Fatalf("failed to create new state: %v", err)
 		}
 		old.CreateAccount(acc.Addr)
-		old.SetNonce(acc.Addr, 0, tracing.NonceChangeUnspecified)
-		old.SetBalance(acc.Addr, uint256.MustFromBig(big.NewInt(0)), tracing.BalanceChangeUnspecified)
+		old.SetNonce(acc.Addr, p.acc.Nonce, tracing.NonceChangeUnspecified)
+		old.SetBalance(acc.Addr, uint256.MustFromBig(p.acc.Balance), tracing.BalanceChangeUnspecified)
 		old.SetCode(acc.Addr, []byte{})
 
 		root, err := old.Commit(head.Number.Uint64(), false, false)
@@ -335,10 +354,20 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 	})
 
 	t.Run("should return error if interaction counter mismatch", func(t *testing.T) {
-		v := NewVerifier(VerifierTestProvider{}, log.New(slog.DiscardHandler))
+		p := VerifierTestProvider{
+			acc: &ethclient.Account{
+				Address:     common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"),
+				Nonce:       1,
+				Balance:     big.NewInt(1000),
+				CodeHash:    crypto.Keccak256Hash([]byte("0xdeadbeef")),
+				StorageRoot: common.HexToHash("0xf38f9f63c760d088d7dd04f743619b6291f63beebd8bdf530628f90e9cfa52d7"),
+			},
+			storage: common.BigToHash(big.NewInt(2)).Bytes(),
+		}
+		v := NewVerifier(p, log.New(slog.DiscardHandler))
 
 		acc := &config.AccountConfig{
-			Addr: common.HexToAddress("0x0000000000000000000000000000000000000003"),
+			Addr: p.acc.Address,
 			ContractConfig: &config.ContractConfig{
 				State: &config.SparseConfig{
 					CountSlot: common.BigToHash(big.NewInt(1)),
@@ -356,9 +385,9 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 			t.Fatalf("failed to create new state: %v", err)
 		}
 		old.CreateAccount(acc.Addr)
-		old.SetNonce(acc.Addr, 1, tracing.NonceChangeUnspecified)
-		old.SetBalance(acc.Addr, uint256.MustFromBig(big.NewInt(0)), tracing.BalanceChangeUnspecified)
-		old.SetCode(acc.Addr, []byte{0x01, 0x02, 0x03})
+		old.SetNonce(acc.Addr, p.acc.Nonce, tracing.NonceChangeUnspecified)
+		old.SetBalance(acc.Addr, uint256.MustFromBig(p.acc.Balance), tracing.BalanceChangeUnspecified)
+		old.SetCode(acc.Addr, []byte("0xdeadbeef"))
 		old.SetState(acc.Addr, acc.ContractConfig.State.CountSlot, common.BigToHash(big.NewInt(1)))
 
 		root, err := old.Commit(head.Number.Uint64(), false, false)
@@ -378,10 +407,20 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 	})
 
 	t.Run("should succeed if valid contract account", func(t *testing.T) {
-		v := NewVerifier(VerifierTestProvider{}, log.New(slog.DiscardHandler))
+		p := VerifierTestProvider{
+			acc: &ethclient.Account{
+				Address:     common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"),
+				Nonce:       1,
+				Balance:     big.NewInt(1000),
+				CodeHash:    crypto.Keccak256Hash([]byte("0xdeadbeef")),
+				StorageRoot: common.HexToHash("0xf38f9f63c760d088d7dd04f743619b6291f63beebd8bdf530628f90e9cfa52d7"),
+			},
+			storage: common.BigToHash(big.NewInt(1)).Bytes(),
+		}
+		v := NewVerifier(p, log.New(slog.DiscardHandler))
 
 		acc := &config.AccountConfig{
-			Addr: common.HexToAddress("0x0000000000000000000000000000000000000004"),
+			Addr: p.acc.Address,
 			ContractConfig: &config.ContractConfig{
 				State: &config.SparseConfig{
 					CountSlot: common.BigToHash(big.NewInt(1)),
@@ -399,9 +438,9 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 			t.Fatalf("failed to create new state: %v", err)
 		}
 		old.CreateAccount(acc.Addr)
-		old.SetNonce(acc.Addr, 1, tracing.NonceChangeUnspecified)
-		old.SetBalance(acc.Addr, uint256.MustFromBig(big.NewInt(0)), tracing.BalanceChangeUnspecified)
-		old.SetCode(acc.Addr, []byte{0x01, 0x02, 0x03})
+		old.SetNonce(acc.Addr, p.acc.Nonce, tracing.NonceChangeUnspecified)
+		old.SetBalance(acc.Addr, uint256.MustFromBig(p.acc.Balance), tracing.BalanceChangeUnspecified)
+		old.SetCode(acc.Addr, []byte("0xdeadbeef"))
 		old.SetState(acc.Addr, acc.ContractConfig.State.CountSlot, common.BigToHash(big.NewInt(1)))
 
 		root, err := old.Commit(head.Number.Uint64(), false, false)
