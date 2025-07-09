@@ -19,18 +19,18 @@ import (
 	"testing"
 )
 
-type TestProvider struct {
+type VerifierTestProvider struct {
 }
 
-func (t TestProvider) GetTxsAtBlock(ctx context.Context, header *types.Header) ([]*ethclient.TransactionWithIndex, error) {
+func (t VerifierTestProvider) GetTxsAtBlock(ctx context.Context, header *types.Header) ([]*ethclient.TransactionWithIndex, error) {
 	return nil, nil
 }
 
-func (t TestProvider) GetLogsAtBlock(ctx context.Context, acc common.Address, blockNum *big.Int) ([]*types.Log, error) {
+func (t VerifierTestProvider) GetLogsAtBlock(ctx context.Context, acc common.Address, blockNum *big.Int) ([]*types.Log, error) {
 	return nil, nil
 }
 
-func (t TestProvider) GetAccountAtBlock(ctx context.Context, acc common.Address, head *types.Header) (*ethclient.Account, error) {
+func (t VerifierTestProvider) GetAccountAtBlock(ctx context.Context, acc common.Address, head *types.Header) (*ethclient.Account, error) {
 	if acc == common.HexToAddress("0x0000000000000000000000000000000000000001") {
 		return nil, nil
 	}
@@ -64,7 +64,7 @@ func (t TestProvider) GetAccountAtBlock(ctx context.Context, acc common.Address,
 	return nil, fmt.Errorf("failed to retrieve account")
 }
 
-func (t TestProvider) GetStorageAtBlock(ctx context.Context, acc common.Address, slot common.Hash, head *types.Header) ([]byte, error) {
+func (t VerifierTestProvider) GetStorageAtBlock(ctx context.Context, acc common.Address, slot common.Hash, head *types.Header) ([]byte, error) {
 	if acc == common.HexToAddress("0x0000000000000000000000000000000000003") {
 		return common.BigToHash(big.NewInt(2)).Bytes(), nil
 	}
@@ -74,17 +74,17 @@ func (t TestProvider) GetStorageAtBlock(ctx context.Context, acc common.Address,
 	return nil, nil
 }
 
-func (t TestProvider) GetCodeAtBlock(ctx context.Context, acc common.Address, head *types.Header) ([]byte, error) {
+func (t VerifierTestProvider) GetCodeAtBlock(ctx context.Context, acc common.Address, head *types.Header) ([]byte, error) {
 	return nil, nil
 }
 
-func (t TestProvider) CreateAccessList(ctx context.Context, tx *ethclient.TransactionWithSender, blockNum *big.Int) (*types.AccessList, error) {
+func (t VerifierTestProvider) CreateAccessList(ctx context.Context, tx *ethclient.TransactionWithSender, blockNum *big.Int) (*types.AccessList, error) {
 	return nil, nil
 }
 
 func TestVerifier_VerifyCompleteness(t *testing.T) {
 	t.Run("should return error when account cannot be retrieved", func(t *testing.T) {
-		v := NewVerifier(TestProvider{}, log.New(slog.DiscardHandler))
+		v := NewVerifier(VerifierTestProvider{}, log.New(slog.DiscardHandler))
 
 		acc := &config.AccountConfig{
 			Addr: common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"),
@@ -107,7 +107,7 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 	})
 
 	t.Run("should succeed when account does not exist", func(t *testing.T) {
-		v := NewVerifier(TestProvider{}, log.New(slog.DiscardHandler))
+		v := NewVerifier(VerifierTestProvider{}, log.New(slog.DiscardHandler))
 
 		acc := &config.AccountConfig{
 			Addr: common.HexToAddress("0x0000000000000000000000000000000000000001"),
@@ -130,7 +130,7 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 	})
 
 	t.Run("should return error if account doe not exist not in world state", func(t *testing.T) {
-		v := NewVerifier(TestProvider{}, log.New(slog.DiscardHandler))
+		v := NewVerifier(VerifierTestProvider{}, log.New(slog.DiscardHandler))
 
 		acc := &config.AccountConfig{
 			Addr: common.HexToAddress("0x0000000000000000000000000000000000000002"),
@@ -153,7 +153,7 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 	})
 
 	t.Run("should return error if nonce mismatch", func(t *testing.T) {
-		v := NewVerifier(TestProvider{}, log.New(slog.DiscardHandler))
+		v := NewVerifier(VerifierTestProvider{}, log.New(slog.DiscardHandler))
 
 		acc := &config.AccountConfig{
 			Addr: common.HexToAddress("0x0000000000000000000000000000000000000002"),
@@ -187,7 +187,7 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 	})
 
 	t.Run("should return error if balance mismatch", func(t *testing.T) {
-		v := NewVerifier(TestProvider{}, log.New(slog.DiscardHandler))
+		v := NewVerifier(VerifierTestProvider{}, log.New(slog.DiscardHandler))
 
 		acc := &config.AccountConfig{
 			Addr: common.HexToAddress("0x0000000000000000000000000000000000000002"),
@@ -222,7 +222,7 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 	})
 
 	t.Run("should return error if code hash mismatch", func(t *testing.T) {
-		v := NewVerifier(TestProvider{}, log.New(slog.DiscardHandler))
+		v := NewVerifier(VerifierTestProvider{}, log.New(slog.DiscardHandler))
 
 		acc := &config.AccountConfig{
 			Addr: common.HexToAddress("0x0000000000000000000000000000000000000002"),
@@ -259,7 +259,7 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 	})
 
 	t.Run("should return error if storage root mismatch", func(t *testing.T) {
-		v := NewVerifier(TestProvider{}, log.New(slog.DiscardHandler))
+		v := NewVerifier(VerifierTestProvider{}, log.New(slog.DiscardHandler))
 
 		acc := &config.AccountConfig{
 			Addr: common.HexToAddress("0x0000000000000000000000000000000000000002"),
@@ -297,7 +297,7 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 	})
 
 	t.Run("should succeed if valid EOA", func(t *testing.T) {
-		v := NewVerifier(TestProvider{}, log.New(slog.DiscardHandler))
+		v := NewVerifier(VerifierTestProvider{}, log.New(slog.DiscardHandler))
 
 		acc := &config.AccountConfig{
 			Addr:           common.HexToAddress("0x0000000000000000000000000000000000000002"),
@@ -335,7 +335,7 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 	})
 
 	t.Run("should return error if interaction counter mismatch", func(t *testing.T) {
-		v := NewVerifier(TestProvider{}, log.New(slog.DiscardHandler))
+		v := NewVerifier(VerifierTestProvider{}, log.New(slog.DiscardHandler))
 
 		acc := &config.AccountConfig{
 			Addr: common.HexToAddress("0x0000000000000000000000000000000000000003"),
@@ -378,7 +378,7 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 	})
 
 	t.Run("should succeed if valid contract account", func(t *testing.T) {
-		v := NewVerifier(TestProvider{}, log.New(slog.DiscardHandler))
+		v := NewVerifier(VerifierTestProvider{}, log.New(slog.DiscardHandler))
 
 		acc := &config.AccountConfig{
 			Addr: common.HexToAddress("0x0000000000000000000000000000000000000004"),
