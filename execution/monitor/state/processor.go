@@ -33,7 +33,7 @@ type TxProcessor struct {
 func NewTxProcessor(accs *config.AccountsConfig, cc *params.ChainConfig, db storage.KeyValStore, rpc *ethclient.Client, log log.Logger) *TxProcessor {
 	provider := ethclient.NewRpcProvider(rpc)
 	store := ethstore.NewHeaderStore(db)
-	preparer := NewPreparer(provider, store, cc)
+	preparer := NewPreparer(provider, store, accs, cc)
 	verifier := NewVerifier(provider, log)
 	executor := NewTxExecutor(cc)
 
@@ -55,13 +55,20 @@ func (p *TxProcessor) ProcessBlock(ctx context.Context, head *types.Header) erro
 		return fmt.Errorf("failed to get txs at block %d: %w", head.Number.Uint64(), err)
 	}
 
+	p.logWithContext("filter txs for block", head)
+	relevantTxs, err := p.preparer.FilterTxs(ctx, head, txs)
+	if err != nil {
+		return fmt.Errorf("failed to filter txs for block %d: %w", head.Number.Uint64(), err)
+	}
+	p.logWithContext(fmt.Sprintf("got: %d txs, filtered: %d txs, remaining: %d txs", len(txs), len(txs)-len(relevantTxs), len(relevantTxs)), head)
+
 	p.logWithContext("prepare state for block", head)
-	world, err := p.preparer.LoadState(ctx, head, txs)
+	world, err := p.preparer.LoadState(ctx, head, relevantTxs)
 	if err != nil {
 		return fmt.Errorf("failed to load state for block %d: %w", head.Number.Uint64(), err)
 	}
 
-	p.logWithContext("state before execution "+string(world.Dump(nil)), head)
+	p.logWithContext(fmt.Sprintf("state before execution: %s", world.Dump(nil)), head)
 	_, err = p.executor.ExecuteTxs(head, txs, world)
 	if err != nil {
 		return fmt.Errorf("failed to execute txs for block %d: %w", head.Number.Uint64(), err)
@@ -76,7 +83,7 @@ func (p *TxProcessor) ProcessBlock(ctx context.Context, head *types.Header) erro
 	if err != nil {
 		return fmt.Errorf("failed to create new state for block %d: %w", head.Number.Uint64(), err)
 	}
-	p.logWithContext("state after execution "+string(newWorld.Dump(nil)), head)
+	p.logWithContext(fmt.Sprintf("state after execution: %s", newWorld.Dump(nil)), head)
 
 	for _, acc := range p.accounts.Accounts {
 		if err = p.verifier.VerifyCompleteness(ctx, acc, head, newWorld); err != nil {

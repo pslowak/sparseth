@@ -11,15 +11,17 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/triedb"
 	"github.com/holiman/uint256"
+	"slices"
 	"sparseth/ethstore"
 	"sparseth/execution/ethclient"
+	"sparseth/internal/config"
 	"sparseth/storage/mem"
 )
 
-// transactionWithContext wraps a transaction
+// TransactionWithContext wraps a transaction
 // with its context, i.e., the access list and
 // sender's address.
-type transactionWithContext struct {
+type TransactionWithContext struct {
 	tx         *types.Transaction
 	accessList *types.AccessList
 	sender     common.Address
@@ -31,18 +33,71 @@ type transactionWithContext struct {
 type Preparer struct {
 	provider ethclient.Provider
 	store    *ethstore.HeaderStore
+	accs     *config.AccountsConfig
 	cc       *params.ChainConfig
 }
 
 // NewPreparer creates a new Preparer with the
 // specified provider and chain configuration,
 // reading headers from the specified store.
-func NewPreparer(provider ethclient.Provider, store *ethstore.HeaderStore, cc *params.ChainConfig) *Preparer {
+func NewPreparer(provider ethclient.Provider, store *ethstore.HeaderStore, accs *config.AccountsConfig, cc *params.ChainConfig) *Preparer {
 	return &Preparer{
 		provider: provider,
 		store:    store,
+		accs:     accs,
 		cc:       cc,
 	}
+}
+
+// FilterTxs filters a list of transactions to include only those
+// that are relevant to the monitored accounts.
+//
+// A transaction is considered relevant if:
+//   - Its sender (from) or recipient (to) is a monitored account.
+//   - Its access list contains a monitored account.
+//   - Is a contract creation transaction (i.e., has no recipient).
+//
+// For transactions that touch a monitored account, additional
+// context is required to allow correct re-execution. This
+// includes tracking not only the sender and recipient, but also
+// any other accounts whose state is accessed by the transaction,
+// and which appear earlier in the block (i.e., have a lower
+// transaction index).
+//
+// The returned transactions are wrapped with additional context
+// necessary for re-execution.
+func (p *Preparer) FilterTxs(ctx context.Context, header *types.Header, txs []*ethclient.TransactionWithIndex) ([]*TransactionWithContext, error) {
+	txsWithContext, err := p.getTxsWithContext(ctx, header, txs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get transactions with context: %w", err)
+	}
+
+	trackedAccs := make(map[common.Address]bool)
+	for _, acc := range p.accs.Accounts {
+		trackedAccs[acc.Addr] = true
+	}
+
+	// Process transactions in reverse order
+	relevantTxs := make([]*TransactionWithContext, 0, len(txsWithContext))
+	for i := len(txsWithContext) - 1; i >= 0; i-- {
+		tx := txsWithContext[i]
+
+		if isRelevant(tx, trackedAccs) {
+			relevantTxs = append(relevantTxs, tx)
+
+			// Keep track of additional context
+			trackedAccs[tx.sender] = true
+			if tx.tx.To() != nil {
+				trackedAccs[*tx.tx.To()] = true
+			}
+			for _, tuple := range *tx.accessList {
+				trackedAccs[tuple.Address] = true
+			}
+		}
+	}
+
+	slices.Reverse(relevantTxs)
+	return relevantTxs, nil
 }
 
 // LoadState reconstructs the partial state immediately before
@@ -55,7 +110,7 @@ func NewPreparer(provider ethclient.Provider, store *ethstore.HeaderStore, cc *p
 // Unrelated accounts are omitted.
 //
 // Note that all transactions must belong to the specified block.
-func (p *Preparer) LoadState(ctx context.Context, header *types.Header, txs []*ethclient.TransactionWithIndex) (*state.StateDB, error) {
+func (p *Preparer) LoadState(ctx context.Context, header *types.Header, txs []*TransactionWithContext) (*state.StateDB, error) {
 	db := rawdb.NewDatabase(mem.New())
 	trieDB := triedb.NewDatabase(db, nil)
 	stateDB := state.NewDatabase(trieDB, nil)
@@ -69,14 +124,9 @@ func (p *Preparer) LoadState(ctx context.Context, header *types.Header, txs []*e
 		return nil, fmt.Errorf("failed to get previous header: %w", err)
 	}
 
-	txsWithAccessList, err := p.getTxsWithContext(ctx, header, txs)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get transactions with access list: %w", err)
-	}
-
 	// Reconstruct the partial state
 	// before the current block
-	for _, t := range txsWithAccessList {
+	for _, t := range txs {
 		if err = p.createStateForTx(ctx, prev, t, world); err != nil {
 			return nil, fmt.Errorf("failed to create state for transaction at block %d: %w", prev.Number.Uint64(), err)
 		}
@@ -92,8 +142,8 @@ func (p *Preparer) LoadState(ctx context.Context, header *types.Header, txs []*e
 
 // getTxsWithContext retrieves the context for the
 // specified transactions at the given block.
-func (p *Preparer) getTxsWithContext(ctx context.Context, header *types.Header, txs []*ethclient.TransactionWithIndex) ([]*transactionWithContext, error) {
-	result := make([]*transactionWithContext, len(txs))
+func (p *Preparer) getTxsWithContext(ctx context.Context, header *types.Header, txs []*ethclient.TransactionWithIndex) ([]*TransactionWithContext, error) {
+	result := make([]*TransactionWithContext, len(txs))
 
 	for i, tx := range txs {
 		signer := types.MakeSigner(p.cc, header.Number, header.Time)
@@ -111,7 +161,7 @@ func (p *Preparer) getTxsWithContext(ctx context.Context, header *types.Header, 
 			return nil, fmt.Errorf("failed to create access list for transaction %d: %w", i, err)
 		}
 
-		result[i] = &transactionWithContext{
+		result[i] = &TransactionWithContext{
 			tx:         tx.Tx,
 			accessList: accessList,
 			sender:     from,
@@ -121,10 +171,32 @@ func (p *Preparer) getTxsWithContext(ctx context.Context, header *types.Header, 
 	return result, nil
 }
 
+// isRelevant checks whether the transaction is
+// relevant to the tracked accounts.
+func isRelevant(tx *TransactionWithContext, trackedAccs map[common.Address]bool) bool {
+	if tx.tx.To() == nil {
+		return true
+	}
+	if trackedAccs[tx.sender] {
+		return true
+	}
+	if trackedAccs[*tx.tx.To()] {
+		return true
+	}
+
+	for _, tuple := range *tx.accessList {
+		if trackedAccs[tuple.Address] {
+			return true
+		}
+	}
+
+	return false
+}
+
 // createStateForTx creates the relevant accounts
 // for the specified transaction in the specified
 // world state.
-func (p *Preparer) createStateForTx(ctx context.Context, head *types.Header, tx *transactionWithContext, world *state.StateDB) error {
+func (p *Preparer) createStateForTx(ctx context.Context, head *types.Header, tx *TransactionWithContext, world *state.StateDB) error {
 	// Create sender
 	if err := p.createAccount(ctx, head, tx.sender, world); err != nil {
 		return fmt.Errorf("failed to create sender account %s at block %d: %w", tx.sender.Hex(), head.Number.Uint64(), err)
