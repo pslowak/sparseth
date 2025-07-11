@@ -62,6 +62,11 @@ func (p *TxProcessor) ProcessBlock(ctx context.Context, head *types.Header) erro
 	}
 	p.logWithContext(fmt.Sprintf("got: %d txs, filtered: %d txs, remaining: %d txs", len(txs), len(txs)-len(relevantTxs), len(relevantTxs)), head)
 
+	if len(relevantTxs) == 0 {
+		p.logWithContext("no txs to process, skip re-execution", head)
+		return nil
+	}
+
 	p.logWithContext("prepare state for block", head)
 	world, err := p.preparer.LoadState(ctx, head, relevantTxs)
 	if err != nil {
