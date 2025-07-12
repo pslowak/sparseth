@@ -455,7 +455,59 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 
 		err = v.VerifyCompleteness(t.Context(), acc, head, world)
 		if err != nil {
-			t.Errorf("verifier should succeed for valid contract account")
+			t.Errorf("verifier should succeed for valid contract account, got: %v", err)
+		}
+	})
+
+	t.Run("should succeed if contract exists but count slot was not written yet (contract creation)", func(t *testing.T) {
+		p := verifierTestProvider{
+			acc: &ethclient.Account{
+				Address:     common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"),
+				Nonce:       0,
+				Balance:     big.NewInt(0),
+				CodeHash:    crypto.Keccak256Hash([]byte("0xdeadbeef")),
+				StorageRoot: types.EmptyRootHash,
+			},
+			storage: nil,
+		}
+		v := NewVerifier(p, log.New(slog.DiscardHandler))
+
+		acc := &config.AccountConfig{
+			Addr: p.acc.Address,
+			ContractConfig: &config.ContractConfig{
+				State: &config.SparseConfig{
+					CountSlot: common.BigToHash(big.NewInt(1)),
+				},
+			},
+		}
+		head := &types.Header{
+			Number: big.NewInt(1),
+		}
+		db := rawdb.NewDatabase(mem.New())
+		trieDB := triedb.NewDatabase(db, nil)
+		stateDB := state.NewDatabase(trieDB, nil)
+		old, err := state.New(types.EmptyRootHash, stateDB)
+		if err != nil {
+			t.Fatalf("failed to create new state: %v", err)
+		}
+		old.CreateAccount(acc.Addr)
+		old.SetNonce(acc.Addr, p.acc.Nonce, tracing.NonceChangeUnspecified)
+		old.SetBalance(acc.Addr, uint256.MustFromBig(p.acc.Balance), tracing.BalanceChangeUnspecified)
+		old.SetCode(acc.Addr, []byte("0xdeadbeef"))
+
+		root, err := old.Commit(head.Number.Uint64(), false, false)
+		if err != nil {
+			t.Fatalf("failed to commit state: %v", err)
+		}
+
+		world, err := state.New(root, stateDB)
+		if err != nil {
+			t.Fatalf("failed to create new state: %v", err)
+		}
+
+		err = v.VerifyCompleteness(t.Context(), acc, head, world)
+		if err != nil {
+			t.Errorf("verifier should succeed for non-existent contract account, got: %v", err)
 		}
 	})
 }
