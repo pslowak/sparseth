@@ -108,5 +108,5 @@ func (v *Verifier) verifyExternallyOwnedAccount(expected *ethclient.Account, hea
 // logWithContext logs a message with the account
 // address and block context at warn level.
 func (v *Verifier) logWithContext(msg string, acc *ethclient.Account, header *types.Header) {
-	v.log.Debug(msg, "addr", acc.Address.Hex(), "blockNum", header.Number.Uint64(), "blockHash", header.Hash().Hex())
+	v.log.Warn(msg, "addr", acc.Address.Hex(), "blockNum", header.Number.Uint64(), "blockHash", header.Hash().Hex())
 }
