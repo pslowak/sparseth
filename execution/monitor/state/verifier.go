@@ -35,6 +35,8 @@ func NewVerifier(provider ethclient.Provider, log log.Logger) *Verifier {
 // For contract accounts, the on-chain interaction counter
 // is compared to the actual interaction counter in the
 // state database.
+//
+// This function does not modify the world state.
 func (v *Verifier) VerifyCompleteness(ctx context.Context, acc *config.AccountConfig, header *types.Header, world vm.StateDB) error {
 	v.log.Debug("verify state completeness", "account", acc.Addr.Hex(), "blockNum", header.Number.Uint64(), "blockHash", header.Hash().Hex())
 
