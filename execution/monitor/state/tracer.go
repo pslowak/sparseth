@@ -74,10 +74,10 @@ func (t *Tracer) Accounts() []common.Address {
 	return accounts
 }
 
-// UninitializedAccounts returns a slice of all account
+// UninitializedAccountReads returns a slice of all account
 // addresses that have been read from but not written to
 // in a prior operation, indicating an uninitialized read.
-func (t *Tracer) UninitializedAccounts() []common.Address {
+func (t *Tracer) UninitializedAccountReads() []common.Address {
 	uninitialized := make([]common.Address, 0, len(t.uninitializedAccReads))
 	for addr := range t.uninitializedAccReads {
 		uninitialized = append(uninitialized, addr)
@@ -119,10 +119,10 @@ func (t *Tracer) StorageSlots(addr common.Address) []common.Hash {
 	return make([]common.Hash, 0)
 }
 
-// UninitializedStorageSlots returns a slice of all storage
+// UninitializedStorageReads returns a slice of all storage
 // slots that have been read from but not written to in a
 // prior operation, indicating an uninitialized read.
-func (t *Tracer) UninitializedStorageSlots() []*StorageRead {
+func (t *Tracer) UninitializedStorageReads() []*StorageRead {
 	reads := make([]*StorageRead, 0, len(t.uninitializedStorageReads))
 	for addr, slots := range t.uninitializedStorageReads {
 		keys := make([]common.Hash, 0, len(slots))
