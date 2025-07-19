@@ -124,6 +124,10 @@ func (p *Preparer) LoadState(ctx context.Context, header *types.Header, txs []*T
 		return nil, fmt.Errorf("failed to get previous header: %w", err)
 	}
 
+	if err = p.createAccount(ctx, prev, header.Coinbase, world); err != nil {
+		return nil, fmt.Errorf("failed to create coinbase account %s at block %d: %w", header.Coinbase.Hex(), prev.Number.Uint64(), err)
+	}
+
 	// Reconstruct the partial state
 	// before the current block
 	for _, t := range txs {
