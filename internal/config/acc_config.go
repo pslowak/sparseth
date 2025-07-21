@@ -23,6 +23,17 @@ type AccountConfig struct {
 	ContractConfig *ContractConfig
 }
 
+// Contains checks whether the specified
+// address is a monitored account.
+func (a *AccountsConfig) Contains(addr common.Address) bool {
+	for _, acc := range a.Accounts {
+		if acc.Addr == addr {
+			return true
+		}
+	}
+	return false
+}
+
 // ContractConfig defines the monitoring
 // params for a contract account.
 type ContractConfig struct {
