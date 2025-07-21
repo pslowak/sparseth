@@ -60,6 +60,12 @@ func New(root common.Hash, old *TracingStateDB) (*TracingStateDB, error) {
 	}, nil
 }
 
+// WrittenAccounts returns a slice of all addresses
+// that have been written to during tracing.
+func (db *TracingStateDB) WrittenAccounts() []common.Address {
+	return db.tracer.Accounts()
+}
+
 // UninitializedAccountReads returns a slice of addresses
 // that have been read from but not written to in a
 // prior operation, indicating an uninitialized read.
