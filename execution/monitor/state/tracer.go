@@ -14,9 +14,9 @@ type StorageRead struct {
 	Slots   []common.Hash
 }
 
-// Tracer keeps track of accounts and storage
+// tracer keeps track of accounts and storage
 // slots that have been written to.
-type Tracer struct {
+type tracer struct {
 	// accWrites keeps track of accounts
 	// that have been written to
 	accWrites map[common.Address]bool
@@ -37,10 +37,10 @@ type Tracer struct {
 	log log.Logger
 }
 
-// NewTracer creates a new Tracer instance
+// newTracer creates a new tracer instance
 // with the specified logger.
-func NewTracer(log log.Logger) *Tracer {
-	return &Tracer{
+func newTracer(log log.Logger) *tracer {
+	return &tracer{
 		accWrites:                 make(map[common.Address]bool),
 		storageWrites:             make(map[common.Address]map[common.Hash]bool),
 		uninitializedAccReads:     make(map[common.Address]bool),
@@ -51,7 +51,7 @@ func NewTracer(log log.Logger) *Tracer {
 
 // OnReadAccount registers a read on the specified
 // account address.
-func (t *Tracer) OnReadAccount(addr common.Address) {
+func (t *tracer) OnReadAccount(addr common.Address) {
 	if !t.accWrites[addr] {
 		t.uninitializedAccReads[addr] = true
 		t.log.Debug("uninitialized account read", "account", addr.Hex())
@@ -60,13 +60,13 @@ func (t *Tracer) OnReadAccount(addr common.Address) {
 
 // OnWriteAccount marks the specified account address
 // as having been written to.
-func (t *Tracer) OnWriteAccount(addr common.Address) {
+func (t *tracer) OnWriteAccount(addr common.Address) {
 	t.accWrites[addr] = true
 }
 
 // Accounts returns a slice of all account addresses
 // that have been written to during tracing.
-func (t *Tracer) Accounts() []common.Address {
+func (t *tracer) Accounts() []common.Address {
 	accounts := make([]common.Address, 0, len(t.accWrites))
 	for addr := range t.accWrites {
 		accounts = append(accounts, addr)
@@ -77,7 +77,7 @@ func (t *Tracer) Accounts() []common.Address {
 // UninitializedAccountReads returns a slice of all account
 // addresses that have been read from but not written to
 // in a prior operation, indicating an uninitialized read.
-func (t *Tracer) UninitializedAccountReads() []common.Address {
+func (t *tracer) UninitializedAccountReads() []common.Address {
 	uninitialized := make([]common.Address, 0, len(t.uninitializedAccReads))
 	for addr := range t.uninitializedAccReads {
 		uninitialized = append(uninitialized, addr)
@@ -87,7 +87,7 @@ func (t *Tracer) UninitializedAccountReads() []common.Address {
 
 // OnReadStorage registers a read on the specified
 // storage slot for the specified account address.
-func (t *Tracer) OnReadStorage(addr common.Address, key common.Hash) {
+func (t *tracer) OnReadStorage(addr common.Address, key common.Hash) {
 	if slots, exists := t.storageWrites[addr]; !exists || !slots[key] {
 		if _, exists = t.uninitializedStorageReads[addr]; !exists {
 			t.uninitializedStorageReads[addr] = make(map[common.Hash]bool)
@@ -99,7 +99,7 @@ func (t *Tracer) OnReadStorage(addr common.Address, key common.Hash) {
 
 // OnWriteStorage marks a storage slot as written to
 // for the specified account address.
-func (t *Tracer) OnWriteStorage(addr common.Address, key common.Hash) {
+func (t *tracer) OnWriteStorage(addr common.Address, key common.Hash) {
 	if _, exists := t.storageWrites[addr]; !exists {
 		t.storageWrites[addr] = make(map[common.Hash]bool)
 	}
@@ -108,7 +108,7 @@ func (t *Tracer) OnWriteStorage(addr common.Address, key common.Hash) {
 
 // StorageSlots returns a slice of all storage slots
 // that have been written to for the specified account.
-func (t *Tracer) StorageSlots(addr common.Address) []common.Hash {
+func (t *tracer) StorageSlots(addr common.Address) []common.Hash {
 	if slots, exists := t.storageWrites[addr]; exists {
 		keys := make([]common.Hash, 0, len(slots))
 		for key := range slots {
@@ -122,7 +122,7 @@ func (t *Tracer) StorageSlots(addr common.Address) []common.Hash {
 // UninitializedStorageReads returns a slice of all storage
 // slots that have been read from but not written to in a
 // prior operation, indicating an uninitialized read.
-func (t *Tracer) UninitializedStorageReads() []*StorageRead {
+func (t *tracer) UninitializedStorageReads() []*StorageRead {
 	reads := make([]*StorageRead, 0, len(t.uninitializedStorageReads))
 	for addr, slots := range t.uninitializedStorageReads {
 		keys := make([]common.Hash, 0, len(slots))

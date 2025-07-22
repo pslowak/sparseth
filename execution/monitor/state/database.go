@@ -18,8 +18,9 @@ import (
 type TracingStateDB struct {
 	// inner is the underlying state.StateDB
 	inner *state.StateDB
-	// tracer is used to track account and storage writes
-	tracer *Tracer
+	// tracer is used to track account and storage
+	// reads and writes
+	tracer *tracer
 	// log is the logger for the TracingStateDB
 	log log.Logger
 }
@@ -29,7 +30,7 @@ type TracingStateDB struct {
 //
 // Note that the traces are empty.
 func NewWithEmptyTraces(root common.Hash, db state.Database, log log.Logger) (*TracingStateDB, error) {
-	tracer := NewTracer(log)
+	tr := newTracer(log)
 
 	inner, err := state.New(root, db)
 	if err != nil {
@@ -37,8 +38,8 @@ func NewWithEmptyTraces(root common.Hash, db state.Database, log log.Logger) (*T
 	}
 
 	return &TracingStateDB{
+		tracer: tr,
 		inner:  inner,
-		tracer: tracer,
 		log:    log.With("component", "tracing-state-db"),
 	}, nil
 }
@@ -60,12 +61,6 @@ func New(root common.Hash, old *TracingStateDB) (*TracingStateDB, error) {
 	}, nil
 }
 
-// WrittenAccounts returns a slice of all addresses
-// that have been written to during tracing.
-func (db *TracingStateDB) WrittenAccounts() []common.Address {
-	return db.tracer.Accounts()
-}
-
 // UninitializedAccountReads returns a slice of addresses
 // that have been read from but not written to in a
 // prior operation, indicating an uninitialized read.
@@ -73,6 +68,12 @@ func (db *TracingStateDB) WrittenAccounts() []common.Address {
 // Note that reads are reset when NewWithEmptyTraces is called.
 func (db *TracingStateDB) UninitializedAccountReads() []common.Address {
 	return db.tracer.UninitializedAccountReads()
+}
+
+// WrittenAccounts returns a slice of all addresses
+// that have been written to during tracing.
+func (db *TracingStateDB) WrittenAccounts() []common.Address {
+	return db.tracer.Accounts()
 }
 
 // UninitializedStorageReads returns a slice of all storage

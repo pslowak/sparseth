@@ -10,7 +10,7 @@ import (
 
 func TestTracer_Accounts(t *testing.T) {
 	t.Run("should return empty slice when no accounts written", func(t *testing.T) {
-		tracer := NewTracer(log.New(slog.DiscardHandler))
+		tracer := newTracer(log.New(slog.DiscardHandler))
 
 		accounts := tracer.Accounts()
 		if len(accounts) != 0 {
@@ -19,7 +19,7 @@ func TestTracer_Accounts(t *testing.T) {
 	})
 
 	t.Run("should return accounts that have been written to", func(t *testing.T) {
-		tracer := NewTracer(log.New(slog.DiscardHandler))
+		tracer := newTracer(log.New(slog.DiscardHandler))
 
 		first := common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
 		tracer.OnWriteAccount(first)
@@ -43,7 +43,7 @@ func TestTracer_Accounts(t *testing.T) {
 
 func TestTracer_UninitializedAccountReads(t *testing.T) {
 	t.Run("should return empty slice if no reads", func(t *testing.T) {
-		tracer := NewTracer(log.New(slog.DiscardHandler))
+		tracer := newTracer(log.New(slog.DiscardHandler))
 
 		if len(tracer.UninitializedAccountReads()) != 0 {
 			t.Errorf("expected empty uninitialized accounts slice, got: %v", tracer.UninitializedAccountReads())
@@ -51,7 +51,7 @@ func TestTracer_UninitializedAccountReads(t *testing.T) {
 	})
 
 	t.Run("should return empty slice if no uninitialized reads", func(t *testing.T) {
-		tracer := NewTracer(log.New(slog.DiscardHandler))
+		tracer := newTracer(log.New(slog.DiscardHandler))
 
 		addr := common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
 		tracer.OnWriteAccount(addr)
@@ -62,7 +62,7 @@ func TestTracer_UninitializedAccountReads(t *testing.T) {
 	})
 
 	t.Run("should contain uninitialized account", func(t *testing.T) {
-		tracer := NewTracer(log.New(slog.DiscardHandler))
+		tracer := newTracer(log.New(slog.DiscardHandler))
 
 		addr := common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
 		tracer.OnReadAccount(addr)
@@ -79,7 +79,7 @@ func TestTracer_UninitializedAccountReads(t *testing.T) {
 
 func TestTracer_StorageSlots(t *testing.T) {
 	t.Run("should return empty slice when no storage slots written", func(t *testing.T) {
-		tracer := NewTracer(log.New(slog.DiscardHandler))
+		tracer := newTracer(log.New(slog.DiscardHandler))
 
 		addr := common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
 		slots := tracer.StorageSlots(addr)
@@ -89,7 +89,7 @@ func TestTracer_StorageSlots(t *testing.T) {
 	})
 
 	t.Run("should return storage slots that have been written to", func(t *testing.T) {
-		tracer := NewTracer(log.New(slog.DiscardHandler))
+		tracer := newTracer(log.New(slog.DiscardHandler))
 
 		acc := common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
 		first := common.BigToHash(big.NewInt(0))
@@ -114,7 +114,7 @@ func TestTracer_StorageSlots(t *testing.T) {
 
 func TestTracer_UninitializedStorageReads(t *testing.T) {
 	t.Run("should return empty slice if no reads", func(t *testing.T) {
-		tracer := NewTracer(log.New(slog.DiscardHandler))
+		tracer := newTracer(log.New(slog.DiscardHandler))
 
 		if len(tracer.UninitializedStorageReads()) != 0 {
 			t.Errorf("expected empty uninitialized storage slots slice, got: %v", tracer.UninitializedStorageReads())
@@ -122,7 +122,7 @@ func TestTracer_UninitializedStorageReads(t *testing.T) {
 	})
 
 	t.Run("should return empty slice if no uninitialized reads", func(t *testing.T) {
-		tracer := NewTracer(log.New(slog.DiscardHandler))
+		tracer := newTracer(log.New(slog.DiscardHandler))
 
 		addr := common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
 		tracer.OnWriteStorage(addr, common.BigToHash(big.NewInt(0)))
@@ -133,7 +133,7 @@ func TestTracer_UninitializedStorageReads(t *testing.T) {
 	})
 
 	t.Run("should contain uninitialized storage slot", func(t *testing.T) {
-		tracer := NewTracer(log.New(slog.DiscardHandler))
+		tracer := newTracer(log.New(slog.DiscardHandler))
 
 		addr := common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
 		key := common.BigToHash(big.NewInt(0))
