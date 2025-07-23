@@ -100,8 +100,13 @@ func (n *Node) Shutdown() {
 // startTxMonitor initializes and runs a transaction monitor.
 func (n *Node) startTxMonitor(ctx context.Context, ec *ethclient.Client) func() error {
 	return func() error {
+		proc, err := state.NewTxProcessor(n.config.AccsConfig, n.config.ChainConfig, n.db, ec, n.log)
+		if err != nil {
+			n.log.Error("failed to create transaction-processor", "err", err)
+			return fmt.Errorf("failed to create transaction-processor: %w", err)
+		}
+
 		sub := n.disp.Subscribe("transaction-monitor")
-		proc := state.NewTxProcessor(n.config.AccsConfig, n.config.ChainConfig, n.db, ec, n.log)
 		mntr := monitor.NewMonitor("transaction", sub, proc, n.log)
 
 		if err := mntr.RunContext(ctx); err != nil {

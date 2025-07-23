@@ -7,9 +7,11 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
+	"log/slog"
 	"math/big"
 	"sparseth/execution/ethclient"
 	"sparseth/internal/config"
+	"sparseth/internal/log"
 	"testing"
 )
 
@@ -45,6 +47,8 @@ func (p preparerTestProvider) CreateAccessList(ctx context.Context, tx *ethclien
 }
 
 func TestPreparer_FilterTxs(t *testing.T) {
+	testLogger := log.New(slog.DiscardHandler)
+
 	t.Run("should return error when no access list could be retrieved", func(t *testing.T) {
 		provider := preparerTestProvider{
 			err: fmt.Errorf("failed to create access list"),
@@ -88,7 +92,7 @@ func TestPreparer_FilterTxs(t *testing.T) {
 			},
 		}
 
-		preparer := NewPreparer(provider, nil, accs, cc)
+		preparer := NewPreparer(provider, nil, accs, cc, testLogger)
 		filtered, err := preparer.FilterTxs(t.Context(), header, txs)
 		if err == nil {
 			t.Errorf("expected error, got nil")
@@ -136,7 +140,7 @@ func TestPreparer_FilterTxs(t *testing.T) {
 			},
 		}
 
-		preparer := NewPreparer(provider, nil, accs, cc)
+		preparer := NewPreparer(provider, nil, accs, cc, testLogger)
 		filtered, err := preparer.FilterTxs(t.Context(), header, txs)
 		if err != nil {
 			t.Errorf("expected no error, got: %v", err)
@@ -189,7 +193,7 @@ func TestPreparer_FilterTxs(t *testing.T) {
 			},
 		}
 
-		preparer := NewPreparer(provider, nil, accs, cc)
+		preparer := NewPreparer(provider, nil, accs, cc, testLogger)
 		filtered, err := preparer.FilterTxs(t.Context(), header, txs)
 		if err != nil {
 			t.Errorf("expected no error, got: %v", err)
@@ -243,7 +247,7 @@ func TestPreparer_FilterTxs(t *testing.T) {
 			},
 		}
 
-		preparer := NewPreparer(provider, nil, accs, cc)
+		preparer := NewPreparer(provider, nil, accs, cc, testLogger)
 		filtered, err := preparer.FilterTxs(t.Context(), header, txs)
 		if err != nil {
 			t.Errorf("expected no error, got: %v", err)
@@ -305,7 +309,7 @@ func TestPreparer_FilterTxs(t *testing.T) {
 			},
 		}
 
-		preparer := NewPreparer(provider, nil, accs, cc)
+		preparer := NewPreparer(provider, nil, accs, cc, testLogger)
 		filtered, err := preparer.FilterTxs(t.Context(), header, txs)
 		if err != nil {
 			t.Errorf("expected no error, got: %v", err)
@@ -373,7 +377,7 @@ func TestPreparer_FilterTxs(t *testing.T) {
 			},
 		}
 
-		preparer := NewPreparer(provider, nil, accs, cc)
+		preparer := NewPreparer(provider, nil, accs, cc, testLogger)
 		filtered, err := preparer.FilterTxs(t.Context(), header, txs)
 		if err != nil {
 			t.Errorf("expected no error, got: %v", err)
@@ -441,7 +445,7 @@ func TestPreparer_FilterTxs(t *testing.T) {
 			},
 		}
 
-		preparer := NewPreparer(provider, nil, accs, cc)
+		preparer := NewPreparer(provider, nil, accs, cc, testLogger)
 		filtered, err := preparer.FilterTxs(t.Context(), header, txs)
 		if err != nil {
 			t.Errorf("expected no error, got: %v", err)

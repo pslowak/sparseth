@@ -15,6 +15,7 @@ import (
 	"sparseth/ethstore"
 	"sparseth/execution/ethclient"
 	"sparseth/internal/config"
+	"sparseth/log"
 	"sparseth/storage/mem"
 )
 
@@ -22,30 +23,34 @@ import (
 // with its context, i.e., the access list and
 // sender's address.
 type TransactionWithContext struct {
-	tx         *types.Transaction
-	accessList *types.AccessList
-	sender     common.Address
+	Tx         *types.Transaction
+	Index      int
+	AccessList *types.AccessList
+	Sender     common.Address
 }
 
-// Preparer is responsible for preparing
-// the partial world state just before
-// the execution of a block.
+// Preparer is responsible for:
+//   - Filtering transactions relevant to monitored accounts.
+//   - Loading the partial state just before a specified block.
 type Preparer struct {
 	provider ethclient.Provider
 	store    *ethstore.HeaderStore
 	accs     *config.AccountsConfig
 	cc       *params.ChainConfig
+
+	log log.Logger
 }
 
 // NewPreparer creates a new Preparer with the
 // specified provider and chain configuration,
 // reading headers from the specified store.
-func NewPreparer(provider ethclient.Provider, store *ethstore.HeaderStore, accs *config.AccountsConfig, cc *params.ChainConfig) *Preparer {
+func NewPreparer(provider ethclient.Provider, store *ethstore.HeaderStore, accs *config.AccountsConfig, cc *params.ChainConfig, log log.Logger) *Preparer {
 	return &Preparer{
 		provider: provider,
 		store:    store,
 		accs:     accs,
 		cc:       cc,
+		log:      log.With("component", "state-preparer"),
 	}
 }
 
@@ -86,11 +91,11 @@ func (p *Preparer) FilterTxs(ctx context.Context, header *types.Header, txs []*e
 			relevantTxs = append(relevantTxs, tx)
 
 			// Keep track of additional context
-			trackedAccs[tx.sender] = true
-			if tx.tx.To() != nil {
-				trackedAccs[*tx.tx.To()] = true
+			trackedAccs[tx.Sender] = true
+			if tx.Tx.To() != nil {
+				trackedAccs[*tx.Tx.To()] = true
 			}
-			for _, tuple := range *tx.accessList {
+			for _, tuple := range *tx.AccessList {
 				trackedAccs[tuple.Address] = true
 			}
 		}
@@ -109,12 +114,15 @@ func (p *Preparer) FilterTxs(ctx context.Context, header *types.Header, txs []*e
 // senders, recipients, and any account in their access lists).
 // Unrelated accounts are omitted.
 //
+// The returned state is intended to be short-lived, and is kept
+// entirely in memory.
+//
 // Note that all transactions must belong to the specified block.
-func (p *Preparer) LoadState(ctx context.Context, header *types.Header, txs []*TransactionWithContext) (*state.StateDB, error) {
+func (p *Preparer) LoadState(ctx context.Context, header *types.Header, txs []*TransactionWithContext) (*TracingStateDB, error) {
 	db := rawdb.NewDatabase(mem.New())
 	trieDB := triedb.NewDatabase(db, nil)
 	stateDB := state.NewDatabase(trieDB, nil)
-	world, err := state.New(types.EmptyRootHash, stateDB)
+	world, err := NewWithEmptyTraces(types.EmptyRootHash, stateDB, p.log)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new state: %w", err)
 	}
@@ -141,7 +149,7 @@ func (p *Preparer) LoadState(ctx context.Context, header *types.Header, txs []*T
 		return nil, fmt.Errorf("failed to commit state: %w", err)
 	}
 
-	return state.New(root, stateDB)
+	return New(root, world)
 }
 
 // getTxsWithContext retrieves the context for the
@@ -166,9 +174,10 @@ func (p *Preparer) getTxsWithContext(ctx context.Context, header *types.Header, 
 		}
 
 		result[i] = &TransactionWithContext{
-			tx:         tx.Tx,
-			accessList: accessList,
-			sender:     from,
+			Tx:         tx.Tx,
+			Index:      tx.Index,
+			AccessList: accessList,
+			Sender:     from,
 		}
 	}
 
@@ -178,17 +187,17 @@ func (p *Preparer) getTxsWithContext(ctx context.Context, header *types.Header, 
 // isRelevant checks whether the transaction is
 // relevant to the tracked accounts.
 func isRelevant(tx *TransactionWithContext, trackedAccs map[common.Address]bool) bool {
-	if tx.tx.To() == nil {
+	if tx.Tx.To() == nil {
 		return true
 	}
-	if trackedAccs[tx.sender] {
+	if trackedAccs[tx.Sender] {
 		return true
 	}
-	if trackedAccs[*tx.tx.To()] {
+	if trackedAccs[*tx.Tx.To()] {
 		return true
 	}
 
-	for _, tuple := range *tx.accessList {
+	for _, tuple := range *tx.AccessList {
 		if trackedAccs[tuple.Address] {
 			return true
 		}
@@ -200,21 +209,21 @@ func isRelevant(tx *TransactionWithContext, trackedAccs map[common.Address]bool)
 // createStateForTx creates the relevant accounts
 // for the specified transaction in the specified
 // world state.
-func (p *Preparer) createStateForTx(ctx context.Context, head *types.Header, tx *TransactionWithContext, world *state.StateDB) error {
+func (p *Preparer) createStateForTx(ctx context.Context, head *types.Header, tx *TransactionWithContext, world *TracingStateDB) error {
 	// Create sender
-	if err := p.createAccount(ctx, head, tx.sender, world); err != nil {
-		return fmt.Errorf("failed to create sender account %s at block %d: %w", tx.sender.Hex(), head.Number.Uint64(), err)
+	if err := p.createAccount(ctx, head, tx.Sender, world); err != nil {
+		return fmt.Errorf("failed to create sender account %s at block %d: %w", tx.Sender.Hex(), head.Number.Uint64(), err)
 	}
 
 	// A nil receiver indicates a contract
 	// creation transaction
-	if tx.tx.To() != nil {
-		if err := p.createAccount(ctx, head, *tx.tx.To(), world); err != nil {
-			return fmt.Errorf("failed to create receiver account %s at block %d: %w", tx.tx.To().Hex(), head.Number.Uint64(), err)
+	if tx.Tx.To() != nil {
+		if err := p.createAccount(ctx, head, *tx.Tx.To(), world); err != nil {
+			return fmt.Errorf("failed to create receiver account %s at block %d: %w", tx.Tx.To().Hex(), head.Number.Uint64(), err)
 		}
 	}
 
-	for _, tuple := range *tx.accessList {
+	for _, tuple := range *tx.AccessList {
 		if err := p.createAccount(ctx, head, tuple.Address, world); err != nil {
 			return fmt.Errorf("failed to create account %s at block %d: %w", tuple.Address.Hex(), head.Number.Uint64(), err)
 		}
@@ -226,9 +235,7 @@ func (p *Preparer) createStateForTx(ctx context.Context, head *types.Header, tx 
 				if err != nil {
 					return fmt.Errorf("failed to get storage slot %s for account %s at block %d: %w", slot.Hex(), tuple.Address.Hex(), head.Number.Uint64(), err)
 				}
-				if val != nil {
-					world.SetState(tuple.Address, slot, common.BytesToHash(val))
-				}
+				world.SetState(tuple.Address, slot, common.BytesToHash(val))
 			}
 		}
 	}
@@ -239,7 +246,7 @@ func (p *Preparer) createStateForTx(ctx context.Context, head *types.Header, tx 
 // createAccount creates an account in the
 // world state for the specified address.
 // Note that storage is not initialized.
-func (p *Preparer) createAccount(ctx context.Context, head *types.Header, addr common.Address, world *state.StateDB) error {
+func (p *Preparer) createAccount(ctx context.Context, head *types.Header, addr common.Address, world *TracingStateDB) error {
 	if world.Exist(addr) {
 		// Account already exists,
 		// nothing to create
