@@ -192,9 +192,9 @@ func (db *TracingStateDB) GetCommittedState(addr common.Address, hash common.Has
 	return db.inner.GetCommittedState(addr, hash)
 }
 
-func (db *TracingStateDB) GetState(addr common.Address, hash common.Hash) common.Hash {
-	db.tracer.OnReadStorage(addr, hash)
-	return db.inner.GetState(addr, hash)
+func (db *TracingStateDB) GetState(addr common.Address, key common.Hash) common.Hash {
+	db.tracer.OnReadStorage(addr, key)
+	return db.inner.GetState(addr, key)
 }
 
 func (db *TracingStateDB) SetState(addr common.Address, key, value common.Hash) common.Hash {
