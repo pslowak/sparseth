@@ -22,7 +22,7 @@ func newValidator(log log.Logger) *validator {
 }
 
 // validate validates the raw config.
-func (v *validator) validate(raw *config) error {
+func (v *validator) validate(raw *rawConfig) error {
 	for idx, acc := range raw.Accounts {
 		v.log.Debug("validate account", "address", acc.Address, "index", idx)
 		if err := v.validateAccount(acc); err != nil {

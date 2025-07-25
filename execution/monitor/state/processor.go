@@ -9,9 +9,9 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/triedb"
+	"sparseth/config"
 	"sparseth/ethstore"
 	"sparseth/execution/ethclient"
-	"sparseth/internal/config"
 	"sparseth/log"
 	"sparseth/storage"
 )

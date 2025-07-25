@@ -2,7 +2,7 @@ package node
 
 import (
 	"github.com/ethereum/go-ethereum/params"
-	"sparseth/internal/config"
+	"sparseth/config"
 )
 
 // Config represents a collection of configuration

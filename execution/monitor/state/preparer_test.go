@@ -9,8 +9,8 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"log/slog"
 	"math/big"
+	"sparseth/config"
 	"sparseth/execution/ethclient"
-	"sparseth/internal/config"
 	"sparseth/internal/log"
 	"testing"
 )

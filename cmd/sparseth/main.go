@@ -7,7 +7,8 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"os"
 	"os/signal"
-	"sparseth/internal/config"
+	userconfig "sparseth/config"
+	internalconfig "sparseth/internal/config"
 	"sparseth/internal/log"
 	"sparseth/node"
 	"syscall"
@@ -37,9 +38,9 @@ func main() {
 	logger := log.New(log.NewTerminalHandler()).With("component", "main")
 
 	supportedNetworks := map[string]*params.ChainConfig{
-		"mainnet": config.MainnetChainConfig,
-		"sepolia": config.SepoliaChainConfig,
-		"anvil":   config.AnvilChainConfig,
+		"mainnet": userconfig.MainnetChainConfig,
+		"sepolia": userconfig.SepoliaChainConfig,
+		"anvil":   userconfig.AnvilChainConfig,
 	}
 
 	chainConfig, exists := supportedNetworks[*networkFlag]
@@ -54,7 +55,7 @@ func main() {
 	logger.Info("using config file", "path", *configPath)
 	logger.Info("event mode", "enabled", *eventModeFlag)
 
-	loader := config.NewLoader(logger)
+	loader := internalconfig.NewLoader(logger)
 	accsConfig, err := loader.Load(*configPath)
 	if err != nil {
 		logger.Error("failed to load config", "err", err)

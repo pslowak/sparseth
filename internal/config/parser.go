@@ -5,6 +5,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"os"
+	"sparseth/config"
 	"sparseth/log"
 	"strings"
 )
@@ -29,8 +30,8 @@ func newParser(log log.Logger) *parser {
 
 // parse parses the raw config data
 // into an AccountsConfig.
-func (p *parser) parse(raw *config) (*AccountsConfig, error) {
-	var accounts []*AccountConfig
+func (p *parser) parse(raw *rawConfig) (*config.AccountsConfig, error) {
+	var accounts []*config.AccountConfig
 	for _, unparsed := range raw.Accounts {
 		parsed, err := p.parseAccount(unparsed)
 		if err != nil {
@@ -39,13 +40,13 @@ func (p *parser) parse(raw *config) (*AccountsConfig, error) {
 		accounts = append(accounts, parsed)
 	}
 
-	return &AccountsConfig{
+	return &config.AccountsConfig{
 		Accounts: accounts,
 	}, nil
 }
 
 // parseAccount parses a single account.
-func (p *parser) parseAccount(acc *account) (*AccountConfig, error) {
+func (p *parser) parseAccount(acc *account) (*config.AccountConfig, error) {
 	p.log.Debug("parse account", "address", acc.Address)
 
 	addr := common.HexToAddress(acc.Address)
@@ -62,9 +63,9 @@ func (p *parser) parseAccount(acc *account) (*AccountConfig, error) {
 		return nil, fmt.Errorf("failed to parse sparse config: %w", err)
 	}
 
-	return &AccountConfig{
+	return &config.AccountConfig{
 		Addr: addr,
-		ContractConfig: &ContractConfig{
+		ContractConfig: &config.ContractConfig{
 			Event: eventConfig,
 			State: sparseConfig,
 		},
@@ -75,7 +76,7 @@ func (p *parser) parseAccount(acc *account) (*AccountConfig, error) {
 // for the specified account. Note that if no ABI
 // is specified, and no head slot is found, this
 // is no error and the returned EventConfig is nil.
-func (p *parser) parseEventConfig(acc *account) (*EventConfig, error) {
+func (p *parser) parseEventConfig(acc *account) (*config.EventConfig, error) {
 	if acc.ABI == empty && acc.HeadSlot == empty {
 		p.log.Debug("no event config found for account", "address", acc.Address)
 		return nil, nil
@@ -87,7 +88,7 @@ func (p *parser) parseEventConfig(acc *account) (*EventConfig, error) {
 		return nil, fmt.Errorf("failed to parse ABI for account %s: %w", acc.Address, err)
 	}
 
-	return &EventConfig{
+	return &config.EventConfig{
 		ABI:      contractAbi,
 		HeadSlot: head,
 	}, nil
@@ -98,13 +99,13 @@ func (p *parser) parseEventConfig(acc *account) (*EventConfig, error) {
 // Note that if no count slot is found, this
 // is no error and the returned SparseConfig
 // is nil.
-func (p *parser) parseSparseConfig(acc *account) (*SparseConfig, error) {
+func (p *parser) parseSparseConfig(acc *account) (*config.SparseConfig, error) {
 	if acc.CountSlot == empty {
 		p.log.Debug("no sparse contract config found for account", "address", acc.Address)
 		return nil, nil
 	}
 
-	return &SparseConfig{
+	return &config.SparseConfig{
 		CountSlot: common.HexToHash(acc.CountSlot),
 	}, nil
 }

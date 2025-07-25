@@ -12,9 +12,9 @@ import (
 	"github.com/ethereum/go-ethereum/triedb"
 	"github.com/holiman/uint256"
 	"slices"
+	"sparseth/config"
 	"sparseth/ethstore"
 	"sparseth/execution/ethclient"
-	"sparseth/internal/config"
 	"sparseth/log"
 	"sparseth/storage/mem"
 )

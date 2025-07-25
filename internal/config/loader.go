@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"gopkg.in/yaml.v3"
 	"os"
+	"sparseth/config"
 	"sparseth/log"
 )
 
-// config represents the raw YAML structure
+// rawConfig represents the raw YAML structure
 // of the config file.
-type config struct {
+type rawConfig struct {
 	Accounts []*account `yaml:"accounts"`
 }
 
@@ -39,7 +40,7 @@ func NewLoader(log log.Logger) *Loader {
 }
 
 // Load reads the config file at the specified path.
-func (l *Loader) Load(path string) (*AccountsConfig, error) {
+func (l *Loader) Load(path string) (*config.AccountsConfig, error) {
 	l.log.Info("load config from file", "path", path)
 
 	data, err := os.ReadFile(path)
@@ -47,7 +48,7 @@ func (l *Loader) Load(path string) (*AccountsConfig, error) {
 		return nil, fmt.Errorf("failed to read config file: %w", err)
 	}
 
-	var raw *config
+	var raw *rawConfig
 	if err = yaml.Unmarshal(data, &raw); err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
