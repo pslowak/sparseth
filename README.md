@@ -36,7 +36,7 @@ docker compose up
 SPARSETH supports a variety of command-line options to configure its behavior:
 
 ```bash
-sparseth [--rpc <url>] [--config <path>] [--event-mode]
+sparseth [--rpc <url>] [--config <path>] [--network <name>] [--event-mode]
 ```
 
 ### Options
@@ -44,6 +44,9 @@ sparseth [--rpc <url>] [--config <path>] [--event-mode]
 `--rpc <url>` URL of the Ethereum RPC endpoint to connect to (default: `ws://localhost:8545`).
 
 `--config <path>` Path to the configuration file defining all monitored accounts (default: `config.yaml`).
+
+`--network <name>` Name of the Ethereum network to connect to (default: `mainnet`). Supported networks are: `mainnet`,
+`sepolia`, and `anvil`.
 
 `--event-mode` Enables _event mode_. If omitted, the node operates in _sparse mode_.
 

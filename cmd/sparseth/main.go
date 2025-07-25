@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"github.com/ethereum/go-ethereum/params"
 	"os"
 	"os/signal"
 	"sparseth/internal/config"
@@ -15,6 +16,7 @@ import (
 func main() {
 	rpcURL := flag.String("rpc", "ws://localhost:8545", "RPC provider URL to connect to")
 	configPath := flag.String("config", "config.yaml", "Path to config file")
+	networkFlag := flag.String("network", "mainnet", "Ethereum network to use")
 	eventModeFlag := flag.Bool("event-mode", false, "Enable event monitoring mode (default: false)")
 
 	if v := os.Getenv("EXECUTION_RPC_URL"); v != "" {
@@ -23,6 +25,9 @@ func main() {
 	if v := os.Getenv("CONFIG_PATH"); v != "" {
 		flag.Set("config", v)
 	}
+	if v := os.Getenv("ETHEREUM_NETWORK"); v != "" {
+		flag.Set("network", v)
+	}
 	if v := os.Getenv("EVENT_MODE"); v == "1" || v == "true" {
 		flag.Set("event-mode", "true")
 	}
@@ -30,7 +35,22 @@ func main() {
 	flag.Parse()
 
 	logger := log.New(log.NewTerminalHandler()).With("component", "main")
+
+	supportedNetworks := map[string]*params.ChainConfig{
+		"mainnet": config.MainnetChainConfig,
+		"sepolia": config.SepoliaChainConfig,
+		"anvil":   config.AnvilChainConfig,
+	}
+
+	chainConfig, exists := supportedNetworks[*networkFlag]
+	if !exists {
+		logger.Error("unsupported network", "network", *networkFlag)
+		logger.Info("supported networks: mainnet, sepolia, anvil")
+		os.Exit(2)
+	}
+
 	logger.Info("using RPC provider", "url", *rpcURL)
+	logger.Info("using network", "name", *networkFlag)
 	logger.Info("using config file", "path", *configPath)
 	logger.Info("event mode", "enabled", *eventModeFlag)
 
@@ -45,7 +65,7 @@ func main() {
 	defer cancel()
 
 	nodeConfig := &node.Config{
-		ChainConfig: config.AnvilChainConfig, // The only chain supported (for now)
+		ChainConfig: chainConfig,
 		AccsConfig:  accsConfig,
 		RpcURL:      *rpcURL,
 		IsEventMode: *eventModeFlag,

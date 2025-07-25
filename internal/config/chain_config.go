@@ -19,7 +19,7 @@ var (
 	}
 
 	// AnvilChainConfig is the parameters to
-	// run a node on the Anvil network.
+	// run a node on the Anvil local network.
 	AnvilChainConfig = &params.ChainConfig{
 		ChainID:                 big.NewInt(31337),
 		HomesteadBlock:          big.NewInt(0),
@@ -51,6 +51,14 @@ var (
 			Prague: DefaultPragueBlobConfig,
 		},
 	}
+
+	// MainnetChainConfig is the parameters to
+	// run a node on the Mainnet production network.
+	MainnetChainConfig = params.MainnetChainConfig
+
+	// SepoliaChainConfig is the parameters to
+	// run a node on the Sepolia test network.
+	SepoliaChainConfig = params.SepoliaChainConfig
 )
 
 func newUint64(val uint64) *uint64 {
