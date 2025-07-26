@@ -52,7 +52,7 @@ func (d *Dispatcher) Subscribe(id string) <-chan *types.Header {
 	}
 
 	d.log.Info("new subscription", "id", id)
-	ch := make(chan *types.Header, 10)
+	ch := make(chan *types.Header, 1024)
 	d.subs[id] = ch
 	return ch
 }
