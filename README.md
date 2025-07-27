@@ -36,7 +36,7 @@ docker compose up
 SPARSETH supports a variety of command-line options to configure its behavior:
 
 ```bash
-sparseth [--rpc <url>] [--config <path>] [--network <name>] [--event-mode]
+sparseth [--rpc <url>] [--config <path>] [--network <name>] [--checkpoint <hash>] [--event-mode]
 ```
 
 ### Options
@@ -47,6 +47,10 @@ sparseth [--rpc <url>] [--config <path>] [--network <name>] [--event-mode]
 
 `--network <name>` Name of the Ethereum network to connect to (default: `mainnet`). Supported networks are: `mainnet`,
 `sepolia`, and `anvil`.
+
+`--checkpoint <hash>` Hash of the block to start syncing from (default: `genesis` of the selected network). Note: You 
+must explicitly provide this if you're running an Anvil node with non-default options. Your contract should be deployed
+_after_ the specified checkpoint block.
 
 `--event-mode` Enables _event mode_. If omitted, the node operates in _sparse mode_.
 

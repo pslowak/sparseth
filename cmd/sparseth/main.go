@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
 	"os"
 	"os/signal"
@@ -19,6 +20,7 @@ func main() {
 	configPath := flag.String("config", "config.yaml", "Path to config file")
 	networkFlag := flag.String("network", "mainnet", "Ethereum network to use")
 	eventModeFlag := flag.Bool("event-mode", false, "Enable event monitoring mode (default: false)")
+	checkPointFlag := flag.String("checkpoint", "", "Checkpoint hash to start from (default: genesis hash of the network)")
 
 	if v := os.Getenv("EXECUTION_RPC_URL"); v != "" {
 		flag.Set("rpc", v)
@@ -28,6 +30,9 @@ func main() {
 	}
 	if v := os.Getenv("ETHEREUM_NETWORK"); v != "" {
 		flag.Set("network", v)
+	}
+	if v := os.Getenv("CHECKPOINT_HASH"); v != "" {
+		flag.Set("checkpoint", v)
 	}
 	if v := os.Getenv("EVENT_MODE"); v == "1" || v == "true" {
 		flag.Set("event-mode", "true")
@@ -50,8 +55,19 @@ func main() {
 		os.Exit(2)
 	}
 
+	checkpoint := common.HexToHash(*checkPointFlag)
+	if *checkPointFlag == "" {
+		checkpoints := map[string]common.Hash{
+			"mainnet": userconfig.MainnetGenesisHash,
+			"sepolia": userconfig.SepoliaGenesisHash,
+			"anvil":   userconfig.AnvilGenesisHash,
+		}
+		checkpoint = checkpoints[*networkFlag]
+	}
+
 	logger.Info("using RPC provider", "url", *rpcURL)
 	logger.Info("using network", "name", *networkFlag)
+	logger.Info("using checkpoint", "hash", checkpoint.Hex())
 	logger.Info("using config file", "path", *configPath)
 	logger.Info("event mode", "enabled", *eventModeFlag)
 
@@ -67,6 +83,7 @@ func main() {
 
 	nodeConfig := &node.Config{
 		ChainConfig: chainConfig,
+		Checkpoint:  checkpoint,
 		AccsConfig:  accsConfig,
 		RpcURL:      *rpcURL,
 		IsEventMode: *eventModeFlag,

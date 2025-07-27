@@ -56,7 +56,7 @@ func NewNode(ctx context.Context, config *Config, log log.Logger) (*Node, error)
 func (n *Node) Start(ctx context.Context) error {
 	g, ctx := errgroup.WithContext(ctx)
 
-	consensus, pipe := sync.NewMockClient(n.log, n.rpc, n.db)
+	consensus, pipe := sync.NewMockClient(n.log, n.rpc, n.config.Checkpoint, n.db)
 	listener := execution.NewListener(pipe, n.disp, n.log)
 	ec := ethclient.NewClient(n.rpc)
 
@@ -157,8 +157,8 @@ func (n *Node) startBlockListener(ctx context.Context, l *execution.Listener) fu
 func (n *Node) startConsensusClient(ctx context.Context, c *sync.MockClient) func() error {
 	return func() error {
 		if err := c.RunContext(ctx); err != nil {
-			n.log.Error("failed to start block listener", "err", err)
-			return fmt.Errorf("failed to start block listener: %w", err)
+			n.log.Error("failed to start consensus client", "err", err)
+			return fmt.Errorf("failed to start consensus client: %w", err)
 		}
 		return nil
 	}

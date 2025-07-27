@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
 	"math/big"
 )
@@ -52,13 +53,28 @@ var (
 		},
 	}
 
+	// AnvilGenesisHash is the hash of the genesis
+	// block of the default Anvil local network.
+	//
+	// Note: You need to explicitly set a checkpoint
+	// hash when running Anvil with non-default options,
+	AnvilGenesisHash = common.HexToHash("0xdbab648eecf62b3120068d9b750b9485f8e173d8fd9c2e5a3be25e3cd5303cdd")
+
 	// MainnetChainConfig is the parameters to
 	// run a node on the Mainnet production network.
 	MainnetChainConfig = params.MainnetChainConfig
 
+	// MainnetGenesisHash is the hash of the genesis
+	// block of the Mainnet production network.
+	MainnetGenesisHash = params.MainnetGenesisHash
+
 	// SepoliaChainConfig is the parameters to
 	// run a node on the Sepolia test network.
 	SepoliaChainConfig = params.SepoliaChainConfig
+
+	// SepoliaGenesisHash is the hash of the genesis
+	// block of the Sepolia test network.
+	SepoliaGenesisHash = params.SepoliaGenesisHash
 )
 
 func newUint64(val uint64) *uint64 {
