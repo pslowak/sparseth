@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
 	"os"
@@ -13,6 +14,12 @@ import (
 	"sparseth/internal/log"
 	"sparseth/node"
 	"syscall"
+)
+
+var (
+	mainnet = "mainnet"
+	sepolia = "sepolia"
+	anvil   = "anvil"
 )
 
 func main() {
@@ -43,24 +50,28 @@ func main() {
 	logger := log.New(log.NewTerminalHandler()).With("component", "main")
 
 	supportedNetworks := map[string]*params.ChainConfig{
-		"mainnet": userconfig.MainnetChainConfig,
-		"sepolia": userconfig.SepoliaChainConfig,
-		"anvil":   userconfig.AnvilChainConfig,
+		mainnet: userconfig.MainnetChainConfig,
+		sepolia: userconfig.SepoliaChainConfig,
+		anvil:   userconfig.AnvilChainConfig,
 	}
 
 	chainConfig, exists := supportedNetworks[*networkFlag]
 	if !exists {
 		logger.Error("unsupported network", "network", *networkFlag)
-		logger.Info("supported networks: mainnet, sepolia, anvil")
+		logger.Info(fmt.Sprintf("supported networks: %s, %s, %s", mainnet, sepolia, anvil))
 		os.Exit(2)
 	}
 
 	checkpoint := common.HexToHash(*checkPointFlag)
 	if *checkPointFlag == "" {
+		if *networkFlag == anvil {
+			logger.Error(fmt.Sprintf("checkpoint option is required for %s network", anvil))
+			os.Exit(2)
+		}
+
 		checkpoints := map[string]common.Hash{
-			"mainnet": userconfig.MainnetGenesisHash,
-			"sepolia": userconfig.SepoliaGenesisHash,
-			"anvil":   userconfig.AnvilGenesisHash,
+			mainnet: userconfig.MainnetGenesisHash,
+			sepolia: userconfig.SepoliaGenesisHash,
 		}
 		checkpoint = checkpoints[*networkFlag]
 	}
