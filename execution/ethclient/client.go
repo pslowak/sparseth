@@ -13,6 +13,15 @@ import (
 	"strings"
 )
 
+var (
+	// prestateTracer is a tracer that returns
+	// the accounts necessary to re-execute a
+	// transaction.
+	prestateTracer = map[string]string{
+		"tracer": "prestateTracer",
+	}
+)
+
 // Client is a wrapper for the
 // Ethereum RPC API.
 type Client struct {
@@ -214,6 +223,21 @@ func (ec *Client) GetTransactionsAtBlock(ctx context.Context, blockNum *big.Int)
 		return nil, fmt.Errorf("block %s not found", blockNum)
 	}
 	return block.Txs, err
+}
+
+// GetTransactionTrace retrieves the transaction trace
+// with a pre-state tracer for the specified transaction
+// hash.
+//
+// The prestate tracer returns the accounts necessary to
+// execute the specified transaction.
+func (ec *Client) GetTransactionTrace(ctx context.Context, hash common.Hash) (*TransactionTrace, error) {
+	var result *TransactionTrace
+	err := ec.c.CallContext(ctx, &result, "debug_traceTransaction", hash.Hex(), prestateTracer)
+	if err != nil {
+		return nil, fmt.Errorf("failed to trace transaction %s: %w", hash.Hex(), err)
+	}
+	return result, nil
 }
 
 // CreateAccessList creates an access list for the
