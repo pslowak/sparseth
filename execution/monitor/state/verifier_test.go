@@ -51,6 +51,10 @@ func (t verifierTestProvider) GetCodeAtBlock(context.Context, common.Address, *t
 	return nil, nil
 }
 
+func (t verifierTestProvider) GetTransactionTrace(context.Context, common.Hash) (*ethclient.TransactionTrace, error) {
+	return nil, nil
+}
+
 func (t verifierTestProvider) CreateAccessList(context.Context, *ethclient.TransactionWithSender, *big.Int) (*types.AccessList, error) {
 	return nil, nil
 }

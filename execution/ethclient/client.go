@@ -231,11 +231,11 @@ func (ec *Client) GetTransactionsAtBlock(ctx context.Context, blockNum *big.Int)
 //
 // The prestate tracer returns the accounts necessary to
 // execute the specified transaction.
-func (ec *Client) GetTransactionTrace(ctx context.Context, hash common.Hash) (*TransactionTrace, error) {
+func (ec *Client) GetTransactionTrace(ctx context.Context, txHash common.Hash) (*TransactionTrace, error) {
 	var result *TransactionTrace
-	err := ec.c.CallContext(ctx, &result, "debug_traceTransaction", hash.Hex(), prestateTracer)
+	err := ec.c.CallContext(ctx, &result, "debug_traceTransaction", txHash.Hex(), prestateTracer)
 	if err != nil {
-		return nil, fmt.Errorf("failed to trace transaction %s: %w", hash.Hex(), err)
+		return nil, fmt.Errorf("failed to trace transaction %s: %w", txHash.Hex(), err)
 	}
 	return result, nil
 }

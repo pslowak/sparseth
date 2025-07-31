@@ -42,6 +42,10 @@ func (p preparerTestProvider) GetCodeAtBlock(ctx context.Context, acc common.Add
 	return nil, nil
 }
 
+func (p preparerTestProvider) GetTransactionTrace(ctx context.Context, txHash common.Hash) (*ethclient.TransactionTrace, error) {
+	return nil, nil
+}
+
 func (p preparerTestProvider) CreateAccessList(ctx context.Context, tx *ethclient.TransactionWithSender, blockNum *big.Int) (*types.AccessList, error) {
 	return p.al, p.err
 }

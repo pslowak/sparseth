@@ -3,6 +3,7 @@ package ethclient
 import (
 	"context"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/trie"
 	"math/big"
@@ -46,6 +47,16 @@ func (p *txProvider) getTxsAtBlock(ctx context.Context, header *types.Header) ([
 	}
 
 	return indexedTxs, err
+}
+
+// getTransactionTrace retrieves the transaction trace
+// with a pre-state tracer for the specified transaction
+// hash.
+//
+// The prestate tracer returns the accounts necessary to
+// execute the specified transaction.
+func (p *txProvider) getTransactionTrace(ctx context.Context, txHash common.Hash) (*TransactionTrace, error) {
+	return p.c.GetTransactionTrace(ctx, txHash)
 }
 
 // createAccessList creates an access list for the
