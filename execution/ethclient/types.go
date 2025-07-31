@@ -49,6 +49,11 @@ func (t *TransactionTrace) UnmarshalJSON(data []byte) error {
 			}
 
 			trace.Storage = &storage
+		} else {
+			// No storage slots are touched
+			trace.Storage = &StorageTrace{
+				Slots: make([]common.Hash, 0),
+			}
 		}
 
 		t.Accounts = append(t.Accounts, trace)
@@ -59,16 +64,14 @@ func (t *TransactionTrace) UnmarshalJSON(data []byte) error {
 
 // AccountTrace represents an Ethereum account
 // that was touched during a transaction trace.
-//
-// Note that the storage trace is optional, i.e.,
-// nil if no storage slots were touched.
 type AccountTrace struct {
 	Address common.Address
 	Storage *StorageTrace
 }
 
 // StorageTrace represents the touched storage
-// slots of an account during a transaction trace.
+// slots of an account during a transaction trace,
+// the slots may be empty.
 type StorageTrace struct {
 	Slots []common.Hash
 }
