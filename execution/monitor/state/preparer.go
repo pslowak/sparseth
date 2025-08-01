@@ -20,13 +20,13 @@ import (
 )
 
 // TransactionWithContext wraps a transaction
-// with its context, i.e., the access list and
-// sender's address.
+// with its context, i.e., the index, sender,
+// and transaction trace
 type TransactionWithContext struct {
-	Tx         *types.Transaction
-	Index      int
-	AccessList *types.AccessList
-	Sender     common.Address
+	Tx     *types.Transaction
+	Index  int
+	Sender common.Address
+	Trace  *ethclient.TransactionTrace
 }
 
 // Preparer is responsible for:
@@ -95,8 +95,8 @@ func (p *Preparer) FilterTxs(ctx context.Context, header *types.Header, txs []*e
 			if tx.Tx.To() != nil {
 				trackedAccs[*tx.Tx.To()] = true
 			}
-			for _, tuple := range *tx.AccessList {
-				trackedAccs[tuple.Address] = true
+			for _, acc := range tx.Trace.Accounts {
+				trackedAccs[acc.Address] = true
 			}
 		}
 	}
@@ -164,20 +164,16 @@ func (p *Preparer) getTxsWithContext(ctx context.Context, header *types.Header, 
 			return nil, fmt.Errorf("failed to get sender from tx at index %d: %w", i, err)
 		}
 
-		txWithSender := &ethclient.TransactionWithSender{
-			Tx:   tx.Tx,
-			From: from,
-		}
-		accessList, err := p.provider.CreateAccessList(ctx, txWithSender, header.Number)
+		trace, err := p.provider.GetTransactionTrace(ctx, tx.Tx.Hash())
 		if err != nil {
 			return nil, fmt.Errorf("failed to create access list for transaction %d: %w", i, err)
 		}
 
 		result[i] = &TransactionWithContext{
-			Tx:         tx.Tx,
-			Index:      tx.Index,
-			AccessList: accessList,
-			Sender:     from,
+			Tx:     tx.Tx,
+			Index:  tx.Index,
+			Trace:  trace,
+			Sender: from,
 		}
 	}
 
@@ -197,8 +193,8 @@ func isRelevant(tx *TransactionWithContext, trackedAccs map[common.Address]bool)
 		return true
 	}
 
-	for _, tuple := range *tx.AccessList {
-		if trackedAccs[tuple.Address] {
+	for _, acc := range tx.Trace.Accounts {
+		if trackedAccs[acc.Address] {
 			return true
 		}
 	}
@@ -223,19 +219,18 @@ func (p *Preparer) createStateForTx(ctx context.Context, head *types.Header, tx 
 		}
 	}
 
-	for _, tuple := range *tx.AccessList {
-		if err := p.createAccount(ctx, head, tuple.Address, world); err != nil {
-			return fmt.Errorf("failed to create account %s at block %d: %w", tuple.Address.Hex(), head.Number.Uint64(), err)
+	for _, acc := range tx.Trace.Accounts {
+		if err := p.createAccount(ctx, head, acc.Address, world); err != nil {
+			return fmt.Errorf("failed to create account %s at block %d: %w", acc.Address.Hex(), head.Number.Uint64(), err)
 		}
 
-		for _, slot := range tuple.StorageKeys {
-			// Initialize storage used by the tx
-			if world.Exist(tuple.Address) {
-				val, err := p.provider.GetStorageAtBlock(ctx, tuple.Address, slot, head)
+		for _, slot := range acc.Storage.Slots {
+			if world.Exist(acc.Address) {
+				val, err := p.provider.GetStorageAtBlock(ctx, acc.Address, slot, head)
 				if err != nil {
-					return fmt.Errorf("failed to get storage slot %s for account %s at block %d: %w", slot.Hex(), tuple.Address.Hex(), head.Number.Uint64(), err)
+					return fmt.Errorf("failed to get storage slot %s for account %s at block %d: %w", slot.Hex(), acc.Address.Hex(), head.Number.Uint64(), err)
 				}
-				world.SetState(tuple.Address, slot, common.BytesToHash(val))
+				world.SetState(acc.Address, slot, common.BytesToHash(val))
 			}
 		}
 	}

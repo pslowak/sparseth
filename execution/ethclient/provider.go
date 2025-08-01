@@ -40,8 +40,14 @@ type Provider interface {
 	// specified block, otherwise an error will be returned.
 	GetCodeAtBlock(ctx context.Context, acc common.Address, head *types.Header) ([]byte, error)
 
-	// CreateAccessList creates an access list for the
-	// specified transaction based on the state at the
-	// specified block number.
-	CreateAccessList(ctx context.Context, tx *TransactionWithSender, blockNum *big.Int) (*types.AccessList, error)
+	// GetTransactionTrace retrieves the transaction trace
+	// with a pre-state tracer for the specified transaction
+	// hash.
+	//
+	// The prestate tracer returns the accounts necessary to
+	// execute the specified transaction.
+	//
+	// Note that the returned trace is not verified, and hence
+	// may not be complete or valid.
+	GetTransactionTrace(ctx context.Context, txHash common.Hash) (*TransactionTrace, error)
 }

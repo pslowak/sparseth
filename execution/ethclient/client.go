@@ -13,6 +13,15 @@ import (
 	"strings"
 )
 
+var (
+	// prestateTracer is a tracer that returns
+	// the accounts necessary to re-execute a
+	// transaction.
+	prestateTracer = map[string]string{
+		"tracer": "prestateTracer",
+	}
+)
+
 // Client is a wrapper for the
 // Ethereum RPC API.
 type Client struct {
@@ -216,67 +225,19 @@ func (ec *Client) GetTransactionsAtBlock(ctx context.Context, blockNum *big.Int)
 	return block.Txs, err
 }
 
-// CreateAccessList creates an access list for the
-// specified transaction based on the state at the
-// specified block number.
-func (ec *Client) CreateAccessList(ctx context.Context, tx *types.Transaction, from common.Address, blockNum *big.Int) (*types.AccessList, error) {
-	type req struct {
-		From                 common.Address               `json:"from"`
-		To                   *common.Address              `json:"to"`
-		Value                *hexutil.Big                 `json:"value,omitempty"`
-		GasPrice             *hexutil.Big                 `json:"gasPrice,omitempty"`
-		MaxFeePerGas         *hexutil.Big                 `json:"maxFeePerGas,omitempty"`
-		MaxPriorityFeePerGas *hexutil.Big                 `json:"maxPriorityFeePerGas,omitempty"`
-		MaxFeePerBlobGas     *hexutil.Big                 `json:"maxFeePerBlobGas,omitempty"`
-		BlobVersionedHashes  []common.Hash                `json:"blobVersionedHashes,omitempty"`
-		AccessList           types.AccessList             `json:"accessList,omitempty"`
-		AuthorizationList    []types.SetCodeAuthorization `json:"authorizationList,omitempty"`
-		Input                hexutil.Bytes                `json:"input,omitempty"`
-	}
-
-	arg := &req{
-		From: from,
-		To:   tx.To(),
-	}
-	if val := tx.Value(); val != nil {
-		arg.Value = (*hexutil.Big)(val)
-	}
-	if input := tx.Data(); len(input) > 0 {
-		arg.Input = input
-	}
-	if gasPrice := tx.GasPrice(); gasPrice != nil {
-		arg.GasPrice = (*hexutil.Big)(gasPrice)
-	}
-	if gasFeeCap := tx.GasFeeCap(); gasFeeCap != nil {
-		arg.MaxFeePerGas = (*hexutil.Big)(gasFeeCap)
-	}
-	if gasTipCap := tx.GasTipCap(); gasTipCap != nil {
-		arg.MaxPriorityFeePerGas = (*hexutil.Big)(gasTipCap)
-	}
-	if blobGasFeeCap := tx.BlobGasFeeCap(); blobGasFeeCap != nil {
-		arg.MaxFeePerBlobGas = (*hexutil.Big)(blobGasFeeCap)
-	}
-	if blobHashes := tx.BlobHashes(); blobHashes != nil {
-		arg.BlobVersionedHashes = blobHashes
-	}
-	if accessList := tx.AccessList(); accessList != nil {
-		arg.AccessList = accessList
-	}
-	if authList := tx.SetCodeAuthorizations(); authList != nil {
-		arg.AuthorizationList = authList
-	}
-
-	type rpcAccessList struct {
-		AccessList *types.AccessList `json:"accessList"`
-	}
-
-	var accessList *rpcAccessList
-	err := ec.c.CallContext(ctx, &accessList, "eth_createAccessList", arg, toBlockNumArg(blockNum))
+// GetTransactionTrace retrieves the transaction trace
+// with a pre-state tracer for the specified transaction
+// hash.
+//
+// The prestate tracer returns the accounts necessary to
+// execute the specified transaction.
+func (ec *Client) GetTransactionTrace(ctx context.Context, txHash common.Hash) (*TransactionTrace, error) {
+	var result *TransactionTrace
+	err := ec.c.CallContext(ctx, &result, "debug_traceTransaction", txHash.Hex(), prestateTracer)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create access list: %w", err)
+		return nil, fmt.Errorf("failed to trace transaction %s: %w", txHash.Hex(), err)
 	}
-
-	return accessList.AccessList, nil
+	return result, nil
 }
 
 // toBlockNumArg converts a *big.Int block number

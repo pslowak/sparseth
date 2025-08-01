@@ -31,27 +31,27 @@ type verifierTestProvider struct {
 	err error
 }
 
-func (t verifierTestProvider) GetTxsAtBlock(context.Context, *types.Header) ([]*ethclient.TransactionWithIndex, error) {
+func (t *verifierTestProvider) GetTxsAtBlock(context.Context, *types.Header) ([]*ethclient.TransactionWithIndex, error) {
 	return nil, nil
 }
 
-func (t verifierTestProvider) GetLogsAtBlock(context.Context, common.Address, *big.Int) ([]*types.Log, error) {
+func (t *verifierTestProvider) GetLogsAtBlock(context.Context, common.Address, *big.Int) ([]*types.Log, error) {
 	return nil, nil
 }
 
-func (t verifierTestProvider) GetAccountAtBlock(context.Context, common.Address, *types.Header) (*ethclient.Account, error) {
+func (t *verifierTestProvider) GetAccountAtBlock(context.Context, common.Address, *types.Header) (*ethclient.Account, error) {
 	return t.acc, t.err
 }
 
-func (t verifierTestProvider) GetStorageAtBlock(context.Context, common.Address, common.Hash, *types.Header) ([]byte, error) {
+func (t *verifierTestProvider) GetStorageAtBlock(context.Context, common.Address, common.Hash, *types.Header) ([]byte, error) {
 	return t.storage, t.err
 }
 
-func (t verifierTestProvider) GetCodeAtBlock(context.Context, common.Address, *types.Header) ([]byte, error) {
+func (t *verifierTestProvider) GetCodeAtBlock(context.Context, common.Address, *types.Header) ([]byte, error) {
 	return nil, nil
 }
 
-func (t verifierTestProvider) CreateAccessList(context.Context, *ethclient.TransactionWithSender, *big.Int) (*types.AccessList, error) {
+func (t *verifierTestProvider) GetTransactionTrace(context.Context, common.Hash) (*ethclient.TransactionTrace, error) {
 	return nil, nil
 }
 
@@ -124,7 +124,7 @@ func TestVerifier_VerifyUninitializedReads(t *testing.T) {
 		addr := common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
 		world.GetNonce(addr)
 
-		testProvider := verifierTestProvider{
+		testProvider := &verifierTestProvider{
 			acc: nil,
 			err: fmt.Errorf("failed to retrieve account"),
 		}
@@ -162,7 +162,7 @@ func TestVerifier_VerifyUninitializedReads(t *testing.T) {
 		addr := common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
 		world.GetNonce(addr)
 
-		testProvider := verifierTestProvider{
+		testProvider := &verifierTestProvider{
 			acc: &ethclient.Account{
 				Address:     addr,
 				Nonce:       1,
@@ -205,7 +205,7 @@ func TestVerifier_VerifyUninitializedReads(t *testing.T) {
 		addr := common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
 		world.GetNonce(addr)
 
-		v := NewVerifier(store, verifierTestProvider{}, logger)
+		v := NewVerifier(store, &verifierTestProvider{}, logger)
 		if err = v.VerifyUninitializedReads(t.Context(), header, world); err != nil {
 			t.Errorf("expected no error, got: %v", err)
 		}
@@ -239,7 +239,7 @@ func TestVerifier_VerifyUninitializedReads(t *testing.T) {
 		slot := common.BigToHash(big.NewInt(1))
 		world.GetState(addr, slot)
 
-		testProvider := verifierTestProvider{
+		testProvider := &verifierTestProvider{
 			acc: &ethclient.Account{
 				Address:     addr,
 				Nonce:       1,
@@ -258,7 +258,7 @@ func TestVerifier_VerifyUninitializedReads(t *testing.T) {
 
 func TestVerifier_VerifyCompleteness(t *testing.T) {
 	t.Run("should return error when account cannot be retrieved", func(t *testing.T) {
-		testProvider := verifierTestProvider{
+		testProvider := &verifierTestProvider{
 			acc: nil,
 			err: fmt.Errorf("failed to retrieve account"),
 		}
@@ -285,7 +285,7 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 	})
 
 	t.Run("should succeed when account does not exist", func(t *testing.T) {
-		v := NewVerifier(nil, verifierTestProvider{}, log.New(slog.DiscardHandler))
+		v := NewVerifier(nil, &verifierTestProvider{}, log.New(slog.DiscardHandler))
 
 		acc := &config.AccountConfig{
 			Addr: common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"),
@@ -308,7 +308,7 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 	})
 
 	t.Run("should return error if account does not exist not in world state", func(t *testing.T) {
-		testProvider := verifierTestProvider{
+		testProvider := &verifierTestProvider{
 			acc: &ethclient.Account{
 				Address: common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"),
 			},
@@ -336,7 +336,7 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 	})
 
 	t.Run("should return error if nonce mismatch", func(t *testing.T) {
-		testProvider := verifierTestProvider{
+		testProvider := &verifierTestProvider{
 			acc: &ethclient.Account{
 				Address: common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"),
 				Nonce:   2,
@@ -376,7 +376,7 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 	})
 
 	t.Run("should return error if balance mismatch", func(t *testing.T) {
-		testProvider := verifierTestProvider{
+		testProvider := &verifierTestProvider{
 			acc: &ethclient.Account{
 				Address: common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"),
 				Nonce:   1,
@@ -418,7 +418,7 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 	})
 
 	t.Run("should return error if code hash mismatch", func(t *testing.T) {
-		testProvider := verifierTestProvider{
+		testProvider := &verifierTestProvider{
 			acc: &ethclient.Account{
 				Address:  common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"),
 				Nonce:    1,
@@ -463,7 +463,7 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 	})
 
 	t.Run("should return error if storage root mismatch", func(t *testing.T) {
-		testProvider := verifierTestProvider{
+		testProvider := &verifierTestProvider{
 			acc: &ethclient.Account{
 				Address:     common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"),
 				Nonce:       1,
@@ -510,7 +510,7 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 	})
 
 	t.Run("should succeed if valid EOA", func(t *testing.T) {
-		testProvider := verifierTestProvider{
+		testProvider := &verifierTestProvider{
 			acc: &ethclient.Account{
 				Address:     common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"),
 				Nonce:       1,
@@ -557,7 +557,7 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 	})
 
 	t.Run("should return error if interaction counter mismatch", func(t *testing.T) {
-		testProvider := verifierTestProvider{
+		testProvider := &verifierTestProvider{
 			acc: &ethclient.Account{
 				Address:     common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"),
 				Nonce:       1,
@@ -610,7 +610,7 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 	})
 
 	t.Run("should succeed if valid contract account", func(t *testing.T) {
-		testProvider := verifierTestProvider{
+		testProvider := &verifierTestProvider{
 			acc: &ethclient.Account{
 				Address:     common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"),
 				Nonce:       1,
@@ -663,7 +663,7 @@ func TestVerifier_VerifyCompleteness(t *testing.T) {
 	})
 
 	t.Run("should succeed if contract exists but count slot was not written yet (contract creation)", func(t *testing.T) {
-		testProvider := verifierTestProvider{
+		testProvider := &verifierTestProvider{
 			acc: &ethclient.Account{
 				Address:     common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"),
 				Nonce:       0,

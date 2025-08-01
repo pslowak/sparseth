@@ -3,9 +3,9 @@ package ethclient
 import (
 	"context"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/trie"
-	"math/big"
 )
 
 // txProvider provides verified
@@ -48,9 +48,12 @@ func (p *txProvider) getTxsAtBlock(ctx context.Context, header *types.Header) ([
 	return indexedTxs, err
 }
 
-// createAccessList creates an access list for the
-// specified transaction based on the state at the
-// specified block number.
-func (p *txProvider) createAccessList(ctx context.Context, tx *TransactionWithSender, blockNum *big.Int) (*types.AccessList, error) {
-	return p.c.CreateAccessList(ctx, tx.Tx, tx.From, blockNum)
+// getTransactionTrace retrieves the transaction trace
+// with a pre-state tracer for the specified transaction
+// hash.
+//
+// The prestate tracer returns the accounts necessary to
+// execute the specified transaction.
+func (p *txProvider) getTransactionTrace(ctx context.Context, txHash common.Hash) (*TransactionTrace, error) {
+	return p.c.GetTransactionTrace(ctx, txHash)
 }

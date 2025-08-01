@@ -66,9 +66,12 @@ func (p *RpcProvider) GetCodeAtBlock(ctx context.Context, acc common.Address, he
 	return p.acc.getCodeAtBlock(ctx, acc, head)
 }
 
-// CreateAccessList creates an access list for the
-// specified transaction based on the state at the
-// specified block number.
-func (p *RpcProvider) CreateAccessList(ctx context.Context, tx *TransactionWithSender, blockNum *big.Int) (*types.AccessList, error) {
-	return p.tx.createAccessList(ctx, tx, blockNum)
+// GetTransactionTrace retrieves the transaction trace
+// with a pre-state tracer for the specified transaction
+// hash.
+//
+// The prestate tracer returns the accounts necessary to
+// execute the specified transaction.
+func (p *RpcProvider) GetTransactionTrace(ctx context.Context, txHash common.Hash) (*TransactionTrace, error) {
+	return p.tx.getTransactionTrace(ctx, txHash)
 }
