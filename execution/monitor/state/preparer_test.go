@@ -16,45 +16,41 @@ import (
 )
 
 type preparerTestProvider struct {
-	// access list to be returned by CreateAccessList
-	al *types.AccessList
+	// trace to be returned by GetTransactionTrace
+	tr *ethclient.TransactionTrace
 	// error to be returned by provider methods
 	err error
 }
 
-func (p preparerTestProvider) GetTxsAtBlock(ctx context.Context, header *types.Header) ([]*ethclient.TransactionWithIndex, error) {
+func (p *preparerTestProvider) GetTxsAtBlock(ctx context.Context, header *types.Header) ([]*ethclient.TransactionWithIndex, error) {
 	return nil, nil
 }
 
-func (p preparerTestProvider) GetLogsAtBlock(ctx context.Context, acc common.Address, blockNum *big.Int) ([]*types.Log, error) {
+func (p *preparerTestProvider) GetLogsAtBlock(ctx context.Context, acc common.Address, blockNum *big.Int) ([]*types.Log, error) {
 	return nil, nil
 }
 
-func (p preparerTestProvider) GetAccountAtBlock(ctx context.Context, acc common.Address, head *types.Header) (*ethclient.Account, error) {
+func (p *preparerTestProvider) GetAccountAtBlock(ctx context.Context, acc common.Address, head *types.Header) (*ethclient.Account, error) {
 	return nil, nil
 }
 
-func (p preparerTestProvider) GetStorageAtBlock(ctx context.Context, acc common.Address, slot common.Hash, head *types.Header) ([]byte, error) {
+func (p *preparerTestProvider) GetStorageAtBlock(ctx context.Context, acc common.Address, slot common.Hash, head *types.Header) ([]byte, error) {
 	return nil, nil
 }
 
-func (p preparerTestProvider) GetCodeAtBlock(ctx context.Context, acc common.Address, head *types.Header) ([]byte, error) {
+func (p *preparerTestProvider) GetCodeAtBlock(ctx context.Context, acc common.Address, head *types.Header) ([]byte, error) {
 	return nil, nil
 }
 
-func (p preparerTestProvider) GetTransactionTrace(ctx context.Context, txHash common.Hash) (*ethclient.TransactionTrace, error) {
-	return nil, nil
-}
-
-func (p preparerTestProvider) CreateAccessList(ctx context.Context, tx *ethclient.TransactionWithSender, blockNum *big.Int) (*types.AccessList, error) {
-	return p.al, p.err
+func (p *preparerTestProvider) GetTransactionTrace(ctx context.Context, txHash common.Hash) (*ethclient.TransactionTrace, error) {
+	return p.tr, p.err
 }
 
 func TestPreparer_FilterTxs(t *testing.T) {
 	testLogger := log.New(slog.DiscardHandler)
 
 	t.Run("should return error when no access list could be retrieved", func(t *testing.T) {
-		provider := preparerTestProvider{
+		provider := &preparerTestProvider{
 			err: fmt.Errorf("failed to create access list"),
 		}
 
@@ -107,8 +103,8 @@ func TestPreparer_FilterTxs(t *testing.T) {
 	})
 
 	t.Run("should not filter tx when contract creation", func(t *testing.T) {
-		provider := preparerTestProvider{
-			al: &types.AccessList{},
+		provider := &preparerTestProvider{
+			tr: &ethclient.TransactionTrace{},
 		}
 
 		sk, err := crypto.GenerateKey()
@@ -155,8 +151,8 @@ func TestPreparer_FilterTxs(t *testing.T) {
 	})
 
 	t.Run("should not filter tx when sender is monitored", func(t *testing.T) {
-		provider := preparerTestProvider{
-			al: &types.AccessList{},
+		provider := &preparerTestProvider{
+			tr: &ethclient.TransactionTrace{},
 		}
 
 		sk, err := crypto.GenerateKey()
@@ -208,8 +204,8 @@ func TestPreparer_FilterTxs(t *testing.T) {
 	})
 
 	t.Run("should not filter tx when receiver is monitored", func(t *testing.T) {
-		provider := preparerTestProvider{
-			al: &types.AccessList{},
+		provider := &preparerTestProvider{
+			tr: &ethclient.TransactionTrace{},
 		}
 
 		sk, err := crypto.GenerateKey()
@@ -263,12 +259,16 @@ func TestPreparer_FilterTxs(t *testing.T) {
 
 	t.Run("should not filter tx when monitored account is in access list", func(t *testing.T) {
 		contract := common.HexToAddress("0x1234567890123456789012345678901234567890")
-		provider := preparerTestProvider{
-			al: &types.AccessList{
-				{
-					Address: contract,
-					StorageKeys: []common.Hash{
-						common.BigToHash(big.NewInt(0)),
+		provider := &preparerTestProvider{
+			tr: &ethclient.TransactionTrace{
+				Accounts: []*ethclient.AccountTrace{
+					{
+						Address: contract,
+						Storage: &ethclient.StorageTrace{
+							Slots: []common.Hash{
+								common.BigToHash(big.NewInt(0)),
+							},
+						},
 					},
 				},
 			},
@@ -324,8 +324,8 @@ func TestPreparer_FilterTxs(t *testing.T) {
 	})
 
 	t.Run("should not filter tx when receiver is monitored and sender sent tx earlier", func(t *testing.T) {
-		provider := preparerTestProvider{
-			al: &types.AccessList{},
+		provider := &preparerTestProvider{
+			tr: &ethclient.TransactionTrace{},
 		}
 
 		sk, err := crypto.GenerateKey()
@@ -392,8 +392,8 @@ func TestPreparer_FilterTxs(t *testing.T) {
 	})
 
 	t.Run("should filter tx when receiver is monitored and sender sent tx later", func(t *testing.T) {
-		provider := preparerTestProvider{
-			al: &types.AccessList{},
+		provider := &preparerTestProvider{
+			tr: &ethclient.TransactionTrace{},
 		}
 
 		sk, err := crypto.GenerateKey()

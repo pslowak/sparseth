@@ -41,7 +41,8 @@ sparseth [--rpc <url>] [--config <path>] [--network <name>] [--checkpoint <hash>
 
 ### Options
 
-`--rpc <url>` URL of the Ethereum RPC endpoint to connect to (default: `ws://localhost:8545`).
+`--rpc <url>` URL of the Ethereum RPC endpoint to connect to (default: `ws://localhost:8545`). Important: Make sure that
+your RPC endpoint supports the `debug_traceTransaction` method with the `prestateTracer` available.
 
 `--config <path>` Path to the configuration file defining all monitored accounts (default: `config.yaml`).
 

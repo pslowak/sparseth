@@ -50,9 +50,4 @@ type Provider interface {
 	// Note that the returned trace is not verified, and hence
 	// may not be complete or valid.
 	GetTransactionTrace(ctx context.Context, txHash common.Hash) (*TransactionTrace, error)
-
-	// CreateAccessList creates an access list for the
-	// specified transaction based on the state at the
-	// specified block number.
-	CreateAccessList(ctx context.Context, tx *TransactionWithSender, blockNum *big.Int) (*types.AccessList, error)
 }

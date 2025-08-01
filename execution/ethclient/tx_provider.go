@@ -58,10 +58,3 @@ func (p *txProvider) getTxsAtBlock(ctx context.Context, header *types.Header) ([
 func (p *txProvider) getTransactionTrace(ctx context.Context, txHash common.Hash) (*TransactionTrace, error) {
 	return p.c.GetTransactionTrace(ctx, txHash)
 }
-
-// createAccessList creates an access list for the
-// specified transaction based on the state at the
-// specified block number.
-func (p *txProvider) createAccessList(ctx context.Context, tx *TransactionWithSender, blockNum *big.Int) (*types.AccessList, error) {
-	return p.c.CreateAccessList(ctx, tx.Tx, tx.From, blockNum)
-}
