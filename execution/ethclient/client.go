@@ -240,69 +240,6 @@ func (ec *Client) GetTransactionTrace(ctx context.Context, txHash common.Hash) (
 	return result, nil
 }
 
-// CreateAccessList creates an access list for the
-// specified transaction based on the state at the
-// specified block number.
-func (ec *Client) CreateAccessList(ctx context.Context, tx *types.Transaction, from common.Address, blockNum *big.Int) (*types.AccessList, error) {
-	type req struct {
-		From                 common.Address               `json:"from"`
-		To                   *common.Address              `json:"to"`
-		Value                *hexutil.Big                 `json:"value,omitempty"`
-		GasPrice             *hexutil.Big                 `json:"gasPrice,omitempty"`
-		MaxFeePerGas         *hexutil.Big                 `json:"maxFeePerGas,omitempty"`
-		MaxPriorityFeePerGas *hexutil.Big                 `json:"maxPriorityFeePerGas,omitempty"`
-		MaxFeePerBlobGas     *hexutil.Big                 `json:"maxFeePerBlobGas,omitempty"`
-		BlobVersionedHashes  []common.Hash                `json:"blobVersionedHashes,omitempty"`
-		AccessList           types.AccessList             `json:"accessList,omitempty"`
-		AuthorizationList    []types.SetCodeAuthorization `json:"authorizationList,omitempty"`
-		Input                hexutil.Bytes                `json:"input,omitempty"`
-	}
-
-	arg := &req{
-		From: from,
-		To:   tx.To(),
-	}
-	if val := tx.Value(); val != nil {
-		arg.Value = (*hexutil.Big)(val)
-	}
-	if input := tx.Data(); len(input) > 0 {
-		arg.Input = input
-	}
-	if gasPrice := tx.GasPrice(); gasPrice != nil {
-		arg.GasPrice = (*hexutil.Big)(gasPrice)
-	}
-	if gasFeeCap := tx.GasFeeCap(); gasFeeCap != nil {
-		arg.MaxFeePerGas = (*hexutil.Big)(gasFeeCap)
-	}
-	if gasTipCap := tx.GasTipCap(); gasTipCap != nil {
-		arg.MaxPriorityFeePerGas = (*hexutil.Big)(gasTipCap)
-	}
-	if blobGasFeeCap := tx.BlobGasFeeCap(); blobGasFeeCap != nil {
-		arg.MaxFeePerBlobGas = (*hexutil.Big)(blobGasFeeCap)
-	}
-	if blobHashes := tx.BlobHashes(); blobHashes != nil {
-		arg.BlobVersionedHashes = blobHashes
-	}
-	if accessList := tx.AccessList(); accessList != nil {
-		arg.AccessList = accessList
-	}
-	if authList := tx.SetCodeAuthorizations(); authList != nil {
-		arg.AuthorizationList = authList
-	}
-
-	type rpcAccessList struct {
-		AccessList *types.AccessList `json:"accessList"`
-	}
-
-	var accessList *rpcAccessList
-	err := ec.c.CallContext(ctx, &accessList, "eth_createAccessList", arg, toBlockNumArg(blockNum))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create access list: %w", err)
-	}
-
-	return accessList.AccessList, nil
-}
-
 // toBlockNumArg converts a *big.Int block number
 // to a hex-encoded string suitable for RPC calls.
 func toBlockNumArg(blockNum *big.Int) string {
