@@ -96,7 +96,9 @@ func (p *Preparer) FilterTxs(ctx context.Context, header *types.Header, txs []*e
 				trackedAccs[*tx.Tx.To()] = true
 			}
 			for _, acc := range tx.Trace.Accounts {
-				trackedAccs[acc.Address] = true
+				if acc.Address != header.Coinbase {
+					trackedAccs[acc.Address] = true
+				}
 			}
 		}
 	}
