@@ -3,9 +3,6 @@ package node
 import (
 	"context"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/rpc"
-	"golang.org/x/sync/errgroup"
 	"math/big"
 	"sparseth/config"
 	"sparseth/execution"
@@ -15,8 +12,12 @@ import (
 	"sparseth/execution/monitor/state"
 	"sparseth/log"
 	"sparseth/storage"
-	"sparseth/storage/mem"
+	"sparseth/storage/badger"
 	"sparseth/sync"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/rpc"
+	"golang.org/x/sync/errgroup"
 )
 
 // Node is the coordinator of the node's
@@ -38,8 +39,12 @@ func NewNode(ctx context.Context, config *Config, log log.Logger) (*Node, error)
 		return nil, fmt.Errorf("could not connect to RPC provider: %w", err)
 	}
 
-	// Use an in-memory db (for now)
-	db := mem.New()
+	db, err := badger.New(config.DbPath)
+	if err != nil {
+		conn.Close()
+		return nil, fmt.Errorf("could not open database: %w", err)
+	}
+
 	disp := execution.NewDispatcher(log)
 
 	return &Node{

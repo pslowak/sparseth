@@ -10,6 +10,7 @@ services:
       - ./build:/app/build
     environment:
       - EXECUTION_RPC_URL=ws://host.docker.internal:8545
+      - DB_PATH=/app/sparseth/.db
       - CONFIG_PATH=/app/config.yaml
       - ETHEREUM_NETWORK=anvil
 #      - EVENT_MODE=true # Uncomment to enable event mode

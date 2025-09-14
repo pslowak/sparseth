@@ -5,8 +5,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/params"
 	"os"
 	"os/signal"
 	userconfig "sparseth/config"
@@ -14,6 +12,9 @@ import (
 	"sparseth/internal/log"
 	"sparseth/node"
 	"syscall"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/params"
 )
 
 var (
@@ -24,6 +25,7 @@ var (
 
 func main() {
 	rpcURL := flag.String("rpc", "ws://localhost:8545", "RPC provider URL to connect to")
+	dbPath := flag.String("db", "/sparseth/.db", "Path to database")
 	configPath := flag.String("config", "config.yaml", "Path to config file")
 	networkFlag := flag.String("network", "mainnet", "Ethereum network to use")
 	eventModeFlag := flag.Bool("event-mode", false, "Enable event monitoring mode (default: false)")
@@ -31,6 +33,9 @@ func main() {
 
 	if v := os.Getenv("EXECUTION_RPC_URL"); v != "" {
 		flag.Set("rpc", v)
+	}
+	if v := os.Getenv("DB_PATH"); v != "" {
+		flag.Set("db", v)
 	}
 	if v := os.Getenv("CONFIG_PATH"); v != "" {
 		flag.Set("config", v)
@@ -77,6 +82,7 @@ func main() {
 	}
 
 	logger.Info("using RPC provider", "url", *rpcURL)
+	logger.Info("using database", "path", *dbPath)
 	logger.Info("using network", "name", *networkFlag)
 	logger.Info("using checkpoint", "hash", checkpoint.Hex())
 	logger.Info("using config file", "path", *configPath)
@@ -97,6 +103,7 @@ func main() {
 		Checkpoint:  checkpoint,
 		AccsConfig:  accsConfig,
 		RpcURL:      *rpcURL,
+		DbPath:      *dbPath,
 		IsEventMode: *eventModeFlag,
 	}
 
