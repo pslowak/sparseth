@@ -36,13 +36,15 @@ docker compose up
 SPARSETH supports a variety of command-line options to configure its behavior:
 
 ```bash
-sparseth [--rpc <url>] [--config <path>] [--network <name>] [--checkpoint <hash>] [--event-mode]
+sparseth [--rpc <url>] [--db <path>] [--config <path>] [--network <name>] [--checkpoint <hash>] [--event-mode]
 ```
 
 ### Options
 
 `--rpc <url>` URL of the Ethereum RPC endpoint to connect to (default: `ws://localhost:8545`). Important: Make sure that
 your RPC endpoint supports the `debug_traceTransaction` method with the `prestateTracer` available.
+
+`--db <path>` Path to the directory where the node's database will be stored (default: `/sparseth/.db`).
 
 `--config <path>` Path to the configuration file defining all monitored accounts (default: `config.yaml`).
 

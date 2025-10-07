@@ -1,9 +1,10 @@
 package node
 
 import (
+	"sparseth/config"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
-	"sparseth/config"
 )
 
 // Config represents a collection of configuration
@@ -22,6 +23,9 @@ type Config struct {
 	// RpcURL specified the URL to use to connect
 	// to the Ethereum RPC provider.
 	RpcURL string
+	// DbPath specifies the path to the database
+	// to use for persistent storage.
+	DbPath string
 	// IsEventMode indicates whether the node
 	// runs in event monitoring mode.
 	IsEventMode bool
