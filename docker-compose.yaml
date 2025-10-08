@@ -13,4 +13,5 @@ services:
       - DB_PATH=/app/sparseth/.db
       - CONFIG_PATH=/app/config.yaml
       - ETHEREUM_NETWORK=anvil
+      - CHECKPOINT_HASH="0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
 #      - EVENT_MODE=true # Uncomment to enable event mode
